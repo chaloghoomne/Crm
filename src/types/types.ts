@@ -60,31 +60,67 @@ interface emp {
   }
   
   interface Lead {
-    _id?: string;
-    packageId?: string;
-    tourType?: string;
-    visaName: string;
-    price: string;
-    visaType?: string;
-    entryType?: string;
-    validity?: string;
-    visaCategory?: string;
-    leadBy?: string;
-    company_id?: string;
+    _id:string;
+    leadBy: string;
+    companyId: string;
+    agent?: string;
+    serviceType: string;
     name: string;
     email: string;
     phoneNumber: string;
-    gender: string;
-    ageGroup: string;
-    dob: string;
-    fathersName: string;
-    mothersName: string;
-    passport: string;
-    passportIssueDate: Date;
-    passportExpiryDate: Date;
+    leadType?: string;
+    requirements?: string;
+    fromDate?: Date;
+    toDate?: Date;
+    agentName: string;
+    assignedEmp:string;
+    assignedEmpId:string;
+    followUp:[]
+  
+  
+    country?: string;
+    tourType?: string;
+    visaCategory?: string;
+    visaName?: string;
+    validity?: string;
+  
+    departureDest?: string;
+    arrivalDest?: string;
+    adult?: number;
+    child?: number;
+    infant?: number;
+  
+
+    insuranceAmount?: string;
+
+    hotelCategory?: string;
+  
+    flightType?: string;
+
+  
+    leadSource?: string;
+    priority?: string;
+  
+    passport?: string;
     status: string;
     documents: Record<string, string>;
-    createdAt: string;
+    createdAt: Date;
+  }
+
+  interface followUp{
+    status:string;
+    reminder:string;
+    remarks:string;
+    nextDate:Date;
+    date:Date;
+  }
+
+  interface Agent{
+    _id?:string;
+    type:string;
+    name:string;
+    email:string;
+    mobile:string;
   }
   
   export type {
@@ -95,5 +131,9 @@ interface emp {
     Package,
     documents,
     Lead,
+    Agent,
+    followUp
   };
+
+
   

@@ -36,7 +36,7 @@ import IconTxtFile from "../../components/Icon/IconTxtFile"
 import html2pdf from "html2pdf.js"
 import axios from "axios"
 
-const Mailbox = ({ to }: { to: string }) => {
+const Mailbox = ({ to,onClose }: { to: string,onClose:()=>void }) => {
   const dispatch = useDispatch()
   useEffect(() => {
     dispatch(setPageTitle("Mailbox"))
@@ -329,6 +329,7 @@ const Mailbox = ({ to }: { to: string }) => {
   return (
     <div>
       <div className="flex gap-5 relative sm:h-[calc(100vh_-_150px)] h-full">
+        {/* <button onClick={onClose}>Close</button> */}
         <div
           className={`overlay bg-black/60 z-[5] w-full h-full rounded-md absolute hidden ${isShowMailMenu ? "!block xl:!hidden" : ""}`}
           onClick={() => setIsShowMailMenu(!isShowMailMenu)}
