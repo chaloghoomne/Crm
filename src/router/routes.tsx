@@ -2,6 +2,8 @@ import { lazy } from 'react';
 import Company from '../pages/Company';
 import AddEmployee from '../pages/AddEmployee';
 import AddLead from '../pages/AddLead';
+import Operations from '../pages/Operations';
+import path from 'path';
 const Index = lazy(() => import('../pages/Index'));
 const Analytics = lazy(() => import('../pages/Analytics'));
 const Finance = lazy(() => import('../pages/Finance'));
@@ -143,7 +145,12 @@ const routes = [
         element: <AddLead />,
     }
     ,
-
+    // Add Operations
+    {
+        path    : '/AddOperations',
+        element : <Operations />,
+    }
+,
 
     {
         path: '/apps/todolist',
