@@ -37,6 +37,7 @@ const Operations = () => {
     const [leadId, setLeadId] = useState('');
     const [itenaryWindow, setItenaryWindow] = useState('');
     const [supplierWindow, setSupplierWindow] = useState(false);
+    const [hotelWindow, setHotelWindow] = useState(false);
     const [supplierList, setSupplierList] = useState([]);
     const [supplierName, setSupplierName] = useState('');
     const [selectSupplierWindow, setSelectSupllierWindow] = useState(false);
@@ -72,6 +73,24 @@ const Operations = () => {
             console.log(err);
         }
     };
+
+    const handleHotelSubmit = async(e:any) =>{
+        e.preventDefault()
+        const data = new FormData(e.target);
+        const values = Object.fromEntries(data.entries());
+        const finalValues = { ...values, companyId };
+        // console.log(values);
+        try {
+            const res = await axios.post(`${import.meta.env.VITE_BASE_URL}api/addHotel`, {
+                ...finalValues,
+            });
+            setHotelWindow(false);
+            showAlert2(15, res.data.message);
+        } catch (err: any) {
+            showAlert2(16, err.response.data.message);
+            console.log(err);
+        }
+    }
 
     const saveSupplierInfo = async (e: any) => {
         try {
@@ -234,9 +253,12 @@ const Operations = () => {
                             </Tab>
                         </Tab.List>
                     </div>
+                    <div className='flex gap-2 my-3'>
                     <button className="btn btn-primary" onClick={() => setSupplierWindow(true)}>
                         Add Supplier
                     </button>
+                    <button className="btn btn-primary" onClick={() => setHotelWindow(true)}>Add Hotel</button>
+                    </div>
                     <Tab.Panels>
                         <Tab.Panel>
                             <div className="active">
@@ -529,6 +551,55 @@ const Operations = () => {
                                         <option value="travelInsurance">Travel Insurance</option>
                                         <option value="hotel">Hotel</option>
                                         <option value="flight">Flight</option>
+                                    </select>
+                                </div>
+                                <div className="flex justify-end">
+                                    <button className="btn btn-secondary" type="submit">
+                                        Submit
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {hotelWindow && (
+                    <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center">
+                         <div className="relative w-full max-w-2xl bg-white rounded-md p-5">
+                            <button className="absolute top-2 right-2" onClick={() => setHotelWindow(false)}>
+                                <IconX />
+                            </button>
+                            <h2>Add Hotel</h2>
+                            <form onSubmit={handleHotelSubmit} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label>Hotel Name</label>
+                                        <input type="text" placeholder="Enter Hotel Name" className="form-input" name="name" />
+                                    </div>
+                                    <div>
+                                        <label>Hotel Address</label>
+                                        <input type="text" placeholder="Enter Hotel Address" className="form-input" name="location" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label>Phone Number</label>
+                                        <input type="text" placeholder="Phone Number" className="form-input" name="phoneNumber" />
+                                    </div>
+                                    <div>
+                                        <label>Email</label>
+                                        <input type="email" placeholder="Enter Email" className="form-input" name="email" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label>Hotel Type</label>
+                                    <select name="hotelType" id="" className="form-select">
+                                        <option value="#">Select a Service</option>
+                                        <option value="1Star">1 Star</option>
+                                        <option value="2Star">2 Star</option>
+                                        <option value="3Star">3 Star</option>
+                                        <option value="4Star">4 Star</option>
+                                        <option value="5Star">5 Star</option>
                                     </select>
                                 </div>
                                 <div className="flex justify-end">
