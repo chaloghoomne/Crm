@@ -163,7 +163,7 @@ const AddLead = () => {
 
     const filteredData = packages.find((d: Package) => d._id === selectedPackage);
 
-    const price = filteredData ? filteredData.price : '';
+    let price = filteredData ? filteredData.price : '';
     const validity = filteredData ? filteredData.validity : '';
     const entryType = filteredData ? filteredData.entryType : '';
     const visaName = filteredData ? filteredData.visaTypeHeading : '';
@@ -305,26 +305,31 @@ const AddLead = () => {
         // Wait for all uploads to complete
         await Promise.all(uploadPromises);
 
-        const finalValues = {
+        let finalValues: { [key: string]: any } = {
             ...values,
-            price: price,
-            validity: validity,
-            entryType: entryType,
-            visaName: visaName,
             leadBy: empId,
             companyId: company_id,
             requirements: value,
             agentName: agentName,
             assignedEmpName: empName,
-            // document: documentUrls, // This now contains all the uploaded document URLs
-        };
+          };
+          
+          if (serviceType === 'visa') {
+            finalValues = {
+              ...finalValues,
+              price: price,
+              validity: validity,
+              entryType: entryType,
+              visaName: visaName,
+            };
+          }
+
 
         try {
             const res = await axios.post(`${import.meta.env.VITE_BASE_URL}api/add-new-lead`, finalValues);
             console.log(res);
             e.target.reset();
             showAlert2(15, 'New Lead Added');
-
             // You might want to add success notification or redirect here
         } catch (err) {
             console.log(err);
@@ -499,7 +504,7 @@ const AddLead = () => {
                                 )}
                                 {serviceType === 'tour' && (
                                     <div>
-                                        <div className="grid grid-cols-2 gap-2">
+                                        {/* <div className="grid grid-cols-2 gap-2">
                                             <div>
                                                 <label>Departure Destination</label>
                                                 <input type="text" name="departureDest" className="form-input" />
@@ -508,16 +513,16 @@ const AddLead = () => {
                                                 <label>Arrival Destination</label>
                                                 <input type="text" name="arrivalDest" className="form-input" />
                                             </div>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 )}
 
                                 {serviceType === 'travelInsurance' && (
                                     <div className="grid grid-cols-1 gap-3">
-                                        <div>
+                                        {/* <div>
                                             <label>Sum Assured</label>
                                             <input type="text" name="insuranceAmount" className="form-input" />
-                                        </div>
+                                        </div> */}
                                     </div>
                                 )}
                                 {serviceType === 'hotel' && (
@@ -536,7 +541,7 @@ const AddLead = () => {
                                     </div>
                                 )}
                                 {serviceType === 'flight' && (
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid  gap-4">
                                         <div>
                                             <label>Flight Type</label>
                                             <select name="hotelCategory" id="" className="form-select">
@@ -547,6 +552,19 @@ const AddLead = () => {
                                         </div>
                                     </div>
                                 )}
+                                <div className='grid grid-cols-2 gap-3'>
+                                    <div>
+                                        <label>Destination</label>
+                                        <input type="text" name="destination" className="form-input" />
+                                    </div>
+                                    {serviceType !== 'visa' && (
+                                        <div>
+                                        <label>Price</label>
+                                        <input type="number" name="price" className="form-input" />
+                                    </div>
+                                    )}
+                                    
+                                </div>
                                 <div className="grid grid-cols-3 gap-2">
                                     <div>
                                         <label>Adult</label>
@@ -647,7 +665,7 @@ const AddLead = () => {
                                                 <button className="absolute top-2 right-2  text-gray-600 hover:text-black" onClick={() => setOpenMailbox(false)}>
                                                     Close
                                                 </button>
-                                                <Mailbox to={emailTo} onClose={() => setOpenMailbox(false)} />
+                                                <Mailbox to={emailTo} />
                                             </div>
                                         </div>
                                     )}
