@@ -14,6 +14,15 @@ interface emp {
     secure: boolean;
     provider: string;
   }
+
+  interface Hotel {
+    _id?: string;
+    name: string;
+    location: string;
+    email: string;
+    phoneNumber: string;
+    hotelType: string;
+  }
   
   interface company {
     name: string;
@@ -74,9 +83,11 @@ interface emp {
     toDate?: Date;
     agentName: string;
     assignedEmp:string;
+    assignedEmpName:string;
     assignedEmpId:string;
-    followUp:[]
-  
+    followUp:[];
+    price?: string;
+    destination?: string;
   
     country?: string;
     tourType?: string;
@@ -84,14 +95,14 @@ interface emp {
     visaName?: string;
     validity?: string;
   
-    departureDest?: string;
-    arrivalDest?: string;
+    // departureDest?: string;
+    // arrivalDest?: string;
     adult?: number;
     child?: number;
     infant?: number;
   
 
-    insuranceAmount?: string;
+    // insuranceAmount?: string;
 
     hotelCategory?: string;
   
@@ -107,12 +118,25 @@ interface emp {
     createdAt: Date;
   }
 
+  interface Operations{
+    _id:string;
+    leadId:Lead;
+    companyId:string;
+    assignedEmpName:string;
+    assignedEmpId:string;
+    supplierId:string;
+    supplierName:string;
+    supplierPrice:string;
+    operationStatus:string;
+  }
+
   interface followUp{
     status:string;
     reminder:string;
     remarks:string;
     nextDate:Date;
     date:Date;
+    price:number;
   }
 
   interface Agent{
@@ -121,6 +145,14 @@ interface emp {
     name:string;
     email:string;
     mobile:string;
+  }
+
+  interface Supplier{
+    _id?:string;
+    name:string;
+    email:string;
+    mobile:string;
+    serviceType:string;
   }
   
   export type {
@@ -132,7 +164,10 @@ interface emp {
     documents,
     Lead,
     Agent,
-    followUp
+    followUp,
+    Operations,
+    Supplier,
+    Hotel
   };
 
 
