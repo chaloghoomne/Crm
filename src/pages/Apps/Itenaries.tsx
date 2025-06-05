@@ -30,8 +30,9 @@ import {
   FaGlobe,
 } from "react-icons/fa"
 import { useSelector } from "react-redux"
-import { IRootState } from "../../store"
-import { set } from "lodash"
+import type { IRootState } from "../../store"
+import type { Hotel } from "../../types/types"
+import { useBunnyUpload } from "../../components/useBunny"
 
 interface ItineraryProps {
   leadId: string
@@ -103,26 +104,26 @@ interface DayActivity {
 }
 
 interface PredefinedItinerary {
-  _id: string;
-  title: string;
-  description?: string;
-  companyId: string;
-  operationId: string;
-  createdBy: string;
-  days: ItineraryDay[];
-  travelers: Traveler[];
-  hotels: HotelInfo[];
-  flights: FlightInfo[];
-  visas: VisaInfo[];
-  status?: string;
-  shareableLink?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  _id: string
+  title: string
+  description?: string
+  companyId: string
+  operationId: string
+  createdBy: string
+  days: ItineraryDay[]
+  travelers: Traveler[]
+  hotels: HotelInfo[]
+  flights: FlightInfo[]
+  visas: VisaInfo[]
+  status?: string
+  shareableLink?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWindow }) => {
   const [lead, setLead] = useState<any>(null)
-  const [loading, setLoading] = useState<boolean>(true)
+  const [loadingFile, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState<boolean>(false)
   const [itineraryDays, setItineraryDays] = useState<ItineraryDay[]>([])
@@ -130,15 +131,7 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
   const [itineraryDescription, setItineraryDescription] = useState<string>("")
   const [travelers, setTravelers] = useState<Traveler[]>([])
   const [activeDay, setActiveDay] = useState<string | null>(null)
-  const [availableHotels, setAvailableHotels] = useState<string[]>([
-    "Grand Hyatt",
-    "Marriott",
-    "Hilton",
-    "Four Seasons",
-    "Ritz-Carlton",
-    "Sheraton",
-  ])
-
+  const [availableHotels, setAvailableHotels] = useState<Hotel[]>([])
   const [hotels, setHotels] = useState<HotelInfo[]>([])
   const [flights, setFlights] = useState<FlightInfo[]>([])
   const [visas, setVisas] = useState<VisaInfo[]>([])
@@ -150,27 +143,39 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
   const [pdfTheme, setPdfTheme] = useState<"light" | "dark" | "colorful">("light")
   const [pdfIncludeImages, setPdfIncludeImages] = useState<boolean>(true)
   const [pdfIncludeDetails, setPdfIncludeDetails] = useState<boolean>(true)
-  const createdBy = useSelector((state: IRootState) => state.auth.id);
-  const companyId = useSelector((state: IRootState) => state.auth.company_id);
+  const [predefinedItineraries, setPredefinedItineraries] = useState<PredefinedItinerary[]>([])
+  const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({})
+
+  const createdBy = useSelector((state: IRootState) => state.auth.id)
+  const companyId = useSelector((state: IRootState) => state.auth.company_id)
+  const { uploadFiles, loading: bunnyLoading } = useBunnyUpload()
 
   const previewRef = useRef<HTMLDivElement>(null)
 
-  // Predefined itineraries
-  const [predefinedItineraries, setPredefinedItineraries] = useState<PredefinedItinerary[]>([])
-
-  useEffect(()=>{
+  useEffect(() => {
     const getItenaryLead = async () => {
-      try{
+      try {
         const res = await axios.get(`${import.meta.env.VITE_BASE_URL}api/getPredefinedItenaryLead/${companyId}`)
         console.log(res.data)
         setPredefinedItineraries(res.data)
-      }
-      catch(err){
+      } catch (err) {
         console.log(err)
       }
     }
     getItenaryLead()
-  },[viewMode])
+  }, [viewMode])
+
+  useEffect(() => {
+    const getHotel = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}api/getHotel/${companyId}`)
+        setAvailableHotels(res.data)
+      } catch (err) {
+        console.log(err)
+      }
+    }
+    getHotel()
+  }, [leadId])
 
   // Fetch lead data
   useEffect(() => {
@@ -178,11 +183,11 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
       try {
         const res = await axios.get(`${import.meta.env.VITE_BASE_URL}api/getItenaryLead/${leadId}`)
         setLead(res.data[0])
-
+        console.log(res)
         // Check if there's existing itinerary data
-        if (res.data[0]?.itineraryData) {
+        if (res.data[0]) {
           try {
-            const itineraryData = JSON.parse(res.data[0].itineraryData)
+            const itineraryData = res.data[0]
             if (itineraryData.days) {
               setItineraryDays(itineraryData.days)
             }
@@ -238,6 +243,53 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
 
     setItineraryDays([...itineraryDays, newDay])
     setActiveDay(newDay.id)
+  }
+
+  // Improved image upload function
+  const handleImageUpload = async (dayId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    // Set uploading state for this specific day
+    setUploadingImages((prev) => ({ ...prev, [dayId]: true }))
+
+    try {
+      // Convert FileList to Array and upload using Bunny
+      const fileArray = Array.from(files)
+      const result = await uploadFiles(fileArray, "itinerary-images")
+
+      if (result.error) {
+        alert(`Upload failed: ${result.error}`)
+        return
+      }
+
+      if (result.imageUrls && result.imageUrls.length > 0) {
+        // Add the uploaded image URLs to the day's images
+        const updatedDays = itineraryDays.map((day) => {
+          if (day.id === dayId) {
+            return {
+              ...day,
+              images: [...day.images, ...result.imageUrls],
+            }
+          }
+          return day
+        })
+
+        setItineraryDays(updatedDays)
+
+        // Show success message
+        const uploadCount = result.imageUrls.length
+        alert(`Successfully uploaded ${uploadCount} image${uploadCount > 1 ? "s" : ""}!`)
+      }
+    } catch (err) {
+      console.error("Error uploading images:", err)
+      alert("Failed to upload images. Please try again.")
+    } finally {
+      // Clear uploading state
+      setUploadingImages((prev) => ({ ...prev, [dayId]: false }))
+      // Clear the input so the same file can be uploaded again if needed
+      e.target.value = ""
+    }
   }
 
   // Remove a day from the itinerary
@@ -376,43 +428,6 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
     })
 
     setItineraryDays(updatedDays)
-  }
-
-  // Handle image upload for a day
-  const handleImageUpload = async (dayId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-
-      try {
-        // Create form data for file upload
-        const formData = new FormData()
-        formData.append("image", file)
-        formData.append("leadId", leadId)
-        formData.append("dayId", dayId)
-
-        // Upload the image
-        const response = await axios.post(`${import.meta.env.VITE_BASE_URL}api/uploadItineraryImage`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
-
-        if (response.data.imageUrl) {
-          // Add the image URL to the day's images
-          const updatedDays = itineraryDays.map((day) => {
-            if (day.id === dayId) {
-              return { ...day, images: [...day.images, response.data.imageUrl] }
-            }
-            return day
-          })
-
-          setItineraryDays(updatedDays)
-        }
-      } catch (err) {
-        console.error("Error uploading image:", err)
-        alert("Failed to upload image. Please try again.")
-      }
-    }
   }
 
   // Remove an image from a day
@@ -607,7 +622,7 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
     setSaving(true)
     try {
       const itineraryData = {
-        operationId:leadId,
+        operationId: leadId,
         createdBy,
         companyId,
         title: itineraryTitle,
@@ -619,8 +634,8 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
         visas: visas,
       }
       console.log(itineraryData)
-      await axios.post(`${import.meta.env.VITE_BASE_URL}api/saveItineray`, {  
-        ...itineraryData
+      await axios.post(`${import.meta.env.VITE_BASE_URL}api/saveItineray`, {
+        ...itineraryData,
       })
 
       alert("Itinerary saved successfully!")
@@ -641,7 +656,7 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
 
     // Set basic itinerary details
     setItineraryTitle(selectedItinerary.title)
-    setItineraryDescription(selectedItinerary?.description || '')
+    setItineraryDescription(selectedItinerary?.description || "")
 
     // Create placeholder days based on the predefined itinerary
     const newDays: ItineraryDay[] = []
@@ -703,15 +718,15 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
         pdf.text(`Travel Dates: ${fromDate} - ${toDate}`, pageWidth / 2, 70, { align: "center" })
       }
 
-      if (lead?.leadId?.country) {
+      if (lead?.leadId?.destination) {
         pdf.setFontSize(14)
         pdf.text(`Destination: ${lead.leadId.destination}`, pageWidth / 2, 80, { align: "center" })
       }
 
       // Add company info at bottom
       pdf.setFontSize(10)
-      pdf.text("Your Travel Agency", pageWidth / 2, pageHeight - 20, { align: "center" })
-      pdf.text("Contact: info@yourtravelagency.com | +1 (555) 123-4567", pageWidth / 2, pageHeight - 15, {
+      pdf.text("ChaloGhoomne.com", pageWidth / 2, pageHeight - 20, { align: "center" })
+      pdf.text("Contact: info@chaloghoomne.com | +1 (555) 123-4567", pageWidth / 2, pageHeight - 15, {
         align: "center",
       })
 
@@ -1066,9 +1081,9 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
 
       pdf.setFontSize(12)
       pdf.text("123 Travel Street, City, Country", pageWidth / 2, 70, { align: "center" })
-      pdf.text("Phone: +1 (555) 123-4567", pageWidth / 2, 80, { align: "center" })
-      pdf.text("Email: info@yourtravelagency.com", pageWidth / 2, 90, { align: "center" })
-      pdf.text("Website: www.yourtravelagency.com", pageWidth / 2, 100, { align: "center" })
+      pdf.text("Phone: +91 9555535252", pageWidth / 2, 80, { align: "center" })
+      pdf.text("Email: b2b@chaloghoomne.com", pageWidth / 2, 90, { align: "center" })
+      pdf.text("Website: www.chaloghoomne.com", pageWidth / 2, 100, { align: "center" })
 
       pdf.setFontSize(10)
       pdf.text("This itinerary is subject to change based on local conditions and availability.", pageWidth / 2, 120, {
@@ -1433,7 +1448,7 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
     )
   }
 
-  if (loading) {
+  if (loadingFile) {
     return (
       <div className="bg-white p-6 rounded shadow-md z-50 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         <p className="text-center">Loading...</p>
@@ -1595,13 +1610,11 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
                 onClick={() => handleSelectPredefinedItinerary(itinerary._id)}
               >
                 <div className="relative h-40">
-                  <img
-                    src={"/placeholder.svg"}
-                    alt={itinerary.title}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={"/placeholder.svg"} alt={itinerary.title} className="w-full h-full object-cover" />
                   <div className="absolute top-2 right-2">
-                    <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">{itinerary.days.length} days</span>
+                    <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                      {itinerary.days.length} days
+                    </span>
                   </div>
                 </div>
                 <div className="p-4">
@@ -1632,7 +1645,7 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
                 Create Custom Itinerary
               </button>
               <button
-                className={`px-4 py-2 rounded-r-md` }
+                className={`px-4 py-2 rounded-r-md bg-white text-gray-700 border border-gray-300 hover:bg-gray-50`}
                 onClick={() => setViewMode("template")}
               >
                 Use Template
@@ -2009,12 +2022,14 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
                                 <label className="block text-sm font-medium text-gray-700">Images</label>
                                 <label className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center text-sm cursor-pointer">
                                   <FaImage className="h-3 w-3 mr-1" />
-                                  <span>Upload Image</span>
+                                  <span>{uploadingImages[day.id] ? "Uploading..." : "Upload Images"}</span>
                                   <input
                                     type="file"
                                     className="hidden"
                                     accept="image/*"
+                                    multiple
                                     onChange={(e) => handleImageUpload(day.id, e)}
+                                    disabled={uploadingImages[day.id] || bunnyLoading}
                                   />
                                 </label>
                               </div>
@@ -2040,7 +2055,7 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
                               ) : (
                                 <div className="text-center py-4 border rounded-md text-gray-500">
                                   <p>No images added yet.</p>
-                                  <p className="text-sm mt-1">Click "Upload Image" to add images for this day.</p>
+                                  <p className="text-sm mt-1">Click "Upload Images" to add images for this day.</p>
                                 </div>
                               )}
                             </div>
@@ -2174,9 +2189,9 @@ const ItineraryComponent: React.FC<ItineraryProps> = ({ leadId, setItineraryWind
                               onChange={(e) => handleUpdateHotel(hotel.id, "name", e.target.value)}
                             >
                               <option value="">Select a hotel</option>
-                              {availableHotels.map((hotelName, index) => (
-                                <option key={index} value={hotelName}>
-                                  {hotelName}
+                              {availableHotels.map((hotelName) => (
+                                <option key={hotelName._id} value={hotelName.name}>
+                                  {hotelName.name}
                                 </option>
                               ))}
                             </select>
