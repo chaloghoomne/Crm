@@ -9,6 +9,8 @@ import IconArrowLeft from '../components/Icon/IconArrowLeft';
 import IconMenu from '../components/Icon/IconMenu';
 import IconCaretDown from '../components/Icon/IconCaretDown';
 
+
+
 const coins = [
     {
         id: 1,
