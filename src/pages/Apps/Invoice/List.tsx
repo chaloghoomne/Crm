@@ -1,315 +1,567 @@
-import { Link, NavLink } from 'react-router-dom';
-import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useState, useEffect } from 'react';
-import sortBy from 'lodash/sortBy';
-import { useDispatch, useSelector } from 'react-redux';
-import { IRootState } from '../../../store';
-import { setPageTitle } from '../../../store/themeConfigSlice';
-import IconTrashLines from '../../../components/Icon/IconTrashLines';
-import IconPlus from '../../../components/Icon/IconPlus';
-import IconEdit from '../../../components/Icon/IconEdit';
-import IconEye from '../../../components/Icon/IconEye';
+"use client"
+import type { DataTableSortStatus } from "mantine-datatable"
+import { useState, useEffect, useRef } from "react"
+import sortBy from "lodash/sortBy"
+import { useDispatch, useSelector } from "react-redux"
+import type { IRootState } from "../../../store"
+import { setPageTitle } from "../../../store/themeConfigSlice"
+import IconTrashLines from "../../../components/Icon/IconTrashLines"
+import IconEdit from "../../../components/Icon/IconEdit"
+import IconEye from "../../../components/Icon/IconEye"
+import Dropdown from "../../../components/Dropdown"
+import axios from "axios"
+import type { company, Invoice, InvoiceItem } from "../../../types/types"
+import { FaOptinMonster, FaDownload, FaTimes } from "react-icons/fa"
+import jsPDF from "jspdf"
+import html2canvas from "html2canvas"
+
+interface Company {
+  companyName: string
+  address: string
+  adminEmail: string
+}
 
 const List = () => {
-    const dispatch = useDispatch();
-    useEffect(() => {
-        dispatch(setPageTitle('Invoice List'));
-    });
-    const [items, setItems] = useState([
-        {
-            id: 1,
-            invoice: '081451',
-            name: 'Laurie Fox',
-            email: 'lauriefox@company.com',
-            date: '15 Dec 2020',
-            amount: '2275.45',
-            status: { tooltip: 'Paid', color: 'success' },
-            profile: 'profile-1.jpeg',
-        },
-        {
-            id: 2,
-            invoice: '081452',
-            name: 'Alexander Gray',
-            email: 'alexGray3188@gmail.com',
-            date: '20 Dec 2020',
-            amount: '1044.00',
-            status: { tooltip: 'Paid', color: 'success' },
-            profile: 'profile-1.jpeg',
-        },
-        {
-            id: 3,
-            invoice: '081681',
-            name: 'James Taylor',
-            email: 'jamestaylor468@gmail.com',
-            date: '27 Dec 2020',
-            amount: '20.00',
-            status: { tooltip: 'Pending', color: 'danger' },
-            profile: 'profile-1.jpeg',
-        },
-        {
-            id: 4,
-            invoice: '082693',
-            name: 'Grace Roberts',
-            email: 'graceRoberts@company.com',
-            date: '31 Dec 2020',
-            amount: '344.00',
-            status: { tooltip: 'Paid', color: 'success' },
-            profile: 'profile-1.jpeg',
-        },
-        {
-            id: 5,
-            invoice: '084743',
-            name: 'Donna Rogers',
-            email: 'donnaRogers@hotmail.com',
-            date: '03 Jan 2021',
-            amount: '405.15',
-            status: { tooltip: 'Paid', color: 'success' },
-            profile: 'profile-1.jpeg',
-        },
-        {
-            id: 6,
-            invoice: '086643',
-            name: 'Amy Diaz',
-            email: 'amy968@gmail.com',
-            date: '14 Jan 2020',
-            amount: '100.00',
-            status: { tooltip: 'Paid', color: 'success' },
-            profile: 'profile-1.jpeg',
-        },
-        {
-            id: 7,
-            invoice: '086773',
-            name: 'Nia Hillyer',
-            email: 'niahillyer666@comapny.com',
-            date: '20 Jan 2021',
-            amount: '59.21',
-            status: { tooltip: 'Pending', color: 'danger' },
-            profile: 'profile-1.jpeg',
-        },
-        {
-            id: 8,
-            invoice: '087916',
-            name: 'Mary McDonald',
-            email: 'maryDonald007@gamil.com',
-            date: '25 Jan 2021',
-            amount: '79.00',
-            status: { tooltip: 'Pending', color: 'danger' },
-            profile: 'profile-1.jpeg',
-        },
-        {
-            id: 9,
-            invoice: '089472',
-            name: 'Andy King',
-            email: 'kingandy07@company.com',
-            date: '28 Jan 2021',
-            amount: '149.00',
-            status: { tooltip: 'Paid', color: 'success' },
-            profile: 'profile-1.jpeg',
-        },
-        {
-            id: 10,
-            invoice: '091768',
-            name: 'Vincent Carpenter',
-            email: 'vincentcarpenter@gmail.com',
-            date: '30 Jan 2021',
-            amount: '400',
-            status: { tooltip: 'Paid', color: 'success' },
-            profile: 'profile-1.jpeg',
-        },
-        {
-            id: 11,
-            invoice: '095841',
-            name: 'Kelly Young',
-            email: 'youngkelly@hotmail.com',
-            date: '06 Feb 2021',
-            amount: '49.00',
-            status: { tooltip: 'Pending', color: 'danger' },
-            profile: 'profile-1.jpeg',
-        },
-        {
-            id: 12,
-            invoice: '098424',
-            name: 'Alma Clarke',
-            email: 'alma.clarke@gmail.com',
-            date: '10 Feb 2021',
-            amount: '234.40',
-            status: { tooltip: 'Paid', color: 'success' },
-            profile: 'profile-1.jpeg',
-        },
-    ]);
+  const dispatch = useDispatch()
+  const invoiceRef = useRef<HTMLDivElement>(null)
 
-    const deleteRow = (id: any = null) => {
-        if (window.confirm('Are you sure want to delete selected row ?')) {
-            if (id) {
-                setRecords(items.filter((user) => user.id !== id));
-                setInitialRecords(items.filter((user) => user.id !== id));
-                setItems(items.filter((user) => user.id !== id));
-                setSearch('');
-                setSelectedRecords([]);
-            } else {
-                let selectedRows = selectedRecords || [];
-                const ids = selectedRows.map((d: any) => {
-                    return d.id;
-                });
-                const result = items.filter((d) => !ids.includes(d.id as never));
-                setRecords(result);
-                setInitialRecords(result);
-                setItems(result);
-                setSearch('');
-                setSelectedRecords([]);
-                setPage(1);
-            }
-        }
-    };
+  useEffect(() => {
+    dispatch(setPageTitle("Invoice List"))
+  }, [dispatch])
 
-    const [page, setPage] = useState(1);
-    const PAGE_SIZES = [10, 20, 30, 50, 100];
-    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
-    const [initialRecords, setInitialRecords] = useState(sortBy(items, 'invoice'));
-    const [records, setRecords] = useState(initialRecords);
-    const [selectedRecords, setSelectedRecords] = useState<any>([]);
+  const companyId = useSelector((state: IRootState) => state.auth.company_id)
+  const [items, setItems] = useState<Invoice[]>([])
+  const [viewInvoice, setViewInvoice] = useState<string | null>(null)
+  const [viewInvoiceData, setViewInvoiceData] = useState<Invoice | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [downloadingPDF, setDownloadingPDF] = useState(false)
 
-    const [search, setSearch] = useState('');
-    const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
-        columnAccessor: 'firstName',
-        direction: 'asc',
-    });
+  const [company,setCompany] = useState<Company>({
+      companyName: "Chalogoomne.com",
+      address: "123 Business Street, City, State 12345",
+      adminEmail: "b2b@chaloghoomne.com",
+    })
 
-    useEffect(() => {
-        setPage(1);
-        /* eslint-disable react-hooks/exhaustive-deps */
-    }, [pageSize]);
+  const [page, setPage] = useState(1)
+  const PAGE_SIZES = [10, 20, 30, 50, 100]
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0])
 
-    useEffect(() => {
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize;
-        setRecords([...initialRecords.slice(from, to)]);
-    }, [page, pageSize, initialRecords]);
+  const [search, setSearch] = useState("")
+  const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
+    columnAccessor: "receiverName",
+    direction: "asc",
+  })
 
-    useEffect(() => {
-        setInitialRecords(() => {
-            return items.filter((item) => {
-                return (
-                    item.invoice.toLowerCase().includes(search.toLowerCase()) ||
-                    item.name.toLowerCase().includes(search.toLowerCase()) ||
-                    item.email.toLowerCase().includes(search.toLowerCase()) ||
-                    item.date.toLowerCase().includes(search.toLowerCase()) ||
-                    item.amount.toLowerCase().includes(search.toLowerCase()) ||
-                    item.status.tooltip.toLowerCase().includes(search.toLowerCase())
-                );
-            });
-        });
-    }, [search]);
+  const calculateSubtotal = () => {
+    if (!viewInvoiceData?.items) return 0
+    return viewInvoiceData.items.reduce((sum: number, item: InvoiceItem) => sum + (item.amount || 0), 0)
+  }
 
-    useEffect(() => {
-        const data2 = sortBy(initialRecords, sortStatus.columnAccessor);
-        setRecords(sortStatus.direction === 'desc' ? data2.reverse() : data2);
-        setPage(1);
-    }, [sortStatus]);
+  const calculateTaxAmount = () => {
+    const subtotal = calculateSubtotal()
+    const taxRate = Number.parseFloat(viewInvoiceData?.tax || "0")
+    return (subtotal * taxRate) / 100
+  }
 
+  const calculateDiscountAmount = () => {
+    const subtotal = calculateSubtotal()
+    const discountRate = Number.parseFloat(viewInvoiceData?.discount || "0")
+    return (subtotal * discountRate) / 100
+  }
+
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal()
+    const taxAmount = calculateTaxAmount()
+    const discountAmount = calculateDiscountAmount()
+    const shippingCharges = Number.parseFloat(viewInvoiceData?.shippingCharges || "0")
+    return subtotal + taxAmount - discountAmount + shippingCharges
+  }
+
+  const filterData = (id: string | null) => {
+    if (!id) {
+      setViewInvoiceData(null)
+      return
+    }
+    const data = items.find((d: Invoice) => d._id === id)
+    setViewInvoiceData(data || null)
+  }
+
+  const downloadPDF = async () => {
+    if (!invoiceRef.current || !viewInvoiceData) return
+
+    setDownloadingPDF(true)
+    try {
+      const canvas = await html2canvas(invoiceRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+      })
+
+      const imgData = canvas.toDataURL("image/png")
+      const pdf = new jsPDF("p", "mm", "a4")
+
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = canvas.width
+      const imgHeight = canvas.height
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+      const imgX = (pdfWidth - imgWidth * ratio) / 2
+      const imgY = 0
+
+      pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio)
+      pdf.save(`invoice-${viewInvoiceData.invoiceNumber}.pdf`)
+    } catch (error) {
+      console.error("Error generating PDF:", error)
+      alert("Error generating PDF. Please try again.")
+    } finally {
+      setDownloadingPDF(false)
+    }
+  }
+
+  const deleteInvoice = async(id:string)=>{
+    try{
+    const res = await axios.get(`${import.meta.env.VITE_BASE_URL}api/deleteInvoice/${id}`);
+    console.log(res.data);
+    window.location.reload();   
+    }
+    catch(error){
+        console.log(error)
+    }
+  }
+
+  const closeInvoiceView = () => {
+    setViewInvoice(null)
+    setViewInvoiceData(null)
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+    }).format(amount)
+  }
+
+  const getInvoiceTotal = (invoice: Invoice) => {
+    if (!invoice.items || invoice.items.length === 0) return 0
+    const subtotal = invoice.items.reduce((sum, item) => sum + (item.amount || 0), 0)
+    const taxAmount = (subtotal * Number.parseFloat(invoice.tax || "0")) / 100
+    const discountAmount = (subtotal * Number.parseFloat(invoice.discount || "0")) / 100
+    const shippingCharges = Number.parseFloat(invoice.shippingCharges || "0")
+    return subtotal + taxAmount - discountAmount + shippingCharges
+  }
+
+  useEffect(()=>{
+      const fetchCompanyDetails = async () => {
+      const res =await axios.get(`${import.meta.env.VITE_BASE_URL}api/getcompanydetails/${companyId}`);
+      console.log(res.data);
+      setCompany(res.data);
+        
+      }
+      fetchCompanyDetails();
+  
+    },[])
+
+  useEffect(() => {
+    filterData(viewInvoice)
+  }, [viewInvoice, items])
+
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      try {
+        setLoading(true)
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}api/getInvoices/${companyId}`)
+        setItems(response.data)
+      } catch (error) {
+        console.error("Error fetching invoices:", error)
+        alert("Error fetching invoices. Please try again.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (companyId) {
+      fetchInvoice()
+    }
+  }, [companyId])
+
+  useEffect(() => {
+    setPage(1)
+  }, [pageSize])
+
+  const filteredItems = items.filter(
+    (item) =>
+      item.receiverName?.toLowerCase().includes(search.toLowerCase()) ||
+      item.invoiceNumber?.toLowerCase().includes(search.toLowerCase()),
+  )
+
+  const sortedItems = sortBy(filteredItems, sortStatus.columnAccessor)
+  if (sortStatus.direction === "desc") {
+    sortedItems.reverse()
+  }
+
+  const paginatedItems = sortedItems.slice((page - 1) * pageSize, page * pageSize)
+
+  if (loading) {
     return (
-        <div className="panel px-0 border-white-light dark:border-[#1b2e4b]">
-            <div className="invoice-table">
-                <div className="mb-4.5 px-5 flex md:items-center md:flex-row flex-col gap-5">
-                    <div className="flex items-center gap-2">
-                        <button type="button" className="btn btn-danger gap-2" onClick={() => deleteRow()}>
-                            <IconTrashLines />
-                            Delete
-                        </button>
-                        <Link to="/apps/invoice/add" className="btn btn-primary gap-2">
-                            <IconPlus />
-                            Add New
-                        </Link>
-                    </div>
-                    <div className="ltr:ml-auto rtl:mr-auto">
-                        <input type="text" className="form-input w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                    </div>
-                </div>
-
-                <div className="datatables pagination-padding">
-                    <DataTable
-                        className="whitespace-nowrap table-hover invoice-table"
-                        records={records}
-                        columns={[
-                            {
-                                accessor: 'invoice',
-                                sortable: true,
-                                render: ({ invoice }) => (
-                                    <NavLink to="/apps/invoice/preview">
-                                        <div className="text-primary underline hover:no-underline font-semibold">{`#${invoice}`}</div>
-                                    </NavLink>
-                                ),
-                            },
-                            {
-                                accessor: 'name',
-                                sortable: true,
-                                render: ({ name, id }) => (
-                                    <div className="flex items-center font-semibold">
-                                        <div className="p-0.5 bg-white-dark/30 rounded-full w-max ltr:mr-2 rtl:ml-2">
-                                            <img className="h-8 w-8 rounded-full object-cover" src={`/assets/images/profile-${id}.jpeg`} alt="" />
-                                        </div>
-                                        <div>{name}</div>
-                                    </div>
-                                ),
-                            },
-                            {
-                                accessor: 'email',
-                                sortable: true,
-                            },
-                            {
-                                accessor: 'date',
-                                sortable: true,
-                            },
-                            {
-                                accessor: 'amount',
-                                sortable: true,
-                                titleClassName: 'text-right',
-                                render: ({ amount, id }) => <div className="text-right font-semibold">{`$${amount}`}</div>,
-                            },
-                            {
-                                accessor: 'status',
-                                sortable: true,
-                                render: ({ status }) => <span className={`badge badge-outline-${status.color} `}>{status.tooltip}</span>,
-                            },
-                            {
-                                accessor: 'action',
-                                title: 'Actions',
-                                sortable: false,
-                                textAlignment: 'center',
-                                render: ({ id }) => (
-                                    <div className="flex gap-4 items-center w-max mx-auto">
-                                        <NavLink to="/apps/invoice/edit" className="flex hover:text-info">
-                                            <IconEdit className="w-4.5 h-4.5" />
-                                        </NavLink>
-                                        <NavLink to="/apps/invoice/preview" className="flex hover:text-primary">
-                                            <IconEye />
-                                        </NavLink>
-                                        {/* <NavLink to="" className="flex"> */}
-                                        <button type="button" className="flex hover:text-danger" onClick={(e) => deleteRow(id)}>
-                                            <IconTrashLines />
-                                        </button>
-                                        {/* </NavLink> */}
-                                    </div>
-                                ),
-                            },
-                        ]}
-                        highlightOnHover
-                        totalRecords={initialRecords.length}
-                        recordsPerPage={pageSize}
-                        page={page}
-                        onPageChange={(p) => setPage(p)}
-                        recordsPerPageOptions={PAGE_SIZES}
-                        onRecordsPerPageChange={setPageSize}
-                        sortStatus={sortStatus}
-                        onSortStatusChange={setSortStatus}
-                        selectedRecords={selectedRecords}
-                        onSelectedRecordsChange={setSelectedRecords}
-                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                    />
-                </div>
-            </div>
+      <div className="panel px-0 border-white-light dark:border-[#1b2e4b] h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading invoices...</p>
         </div>
-    );
-};
+      </div>
+    )
+  }
 
-export default List;
+  return (
+    <div className="panel px-0 border-white-light dark:border-[#1b2e4b] h-screen">
+      {!viewInvoice ? (
+        <>
+          {/* Search and Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-4 border-b border-white-light dark:border-[#1b2e4b]">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                className="form-input w-auto"
+                placeholder="Search invoices..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                className="form-select w-auto"
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+              >
+                {PAGE_SIZES.map((size) => (
+                  <option key={size} value={size}>
+                    {size} per page
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="table-responsive mb-5">
+            <table className="table-hover">
+              <thead>
+                <tr>
+                  <th
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                    onClick={() =>
+                      setSortStatus({
+                        columnAccessor: "receiverName",
+                        direction:
+                          sortStatus.columnAccessor === "receiverName" && sortStatus.direction === "asc"
+                            ? "desc"
+                            : "asc",
+                      })
+                    }
+                  >
+                    Name
+                    {sortStatus.columnAccessor === "receiverName" && (
+                      <span className="ml-1">{sortStatus.direction === "asc" ? "↑" : "↓"}</span>
+                    )}
+                  </th>
+                  <th>Invoice #</th>
+                  <th
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                    onClick={() =>
+                      setSortStatus({
+                        columnAccessor: "dueDate",
+                        direction:
+                          sortStatus.columnAccessor === "dueDate" && sortStatus.direction === "asc" ? "desc" : "asc",
+                      })
+                    }
+                  >
+                    Due Date
+                    {sortStatus.columnAccessor === "dueDate" && (
+                      <span className="ml-1">{sortStatus.direction === "asc" ? "↑" : "↓"}</span>
+                    )}
+                  </th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th className="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-gray-500">
+                      {search ? "No invoices found matching your search." : "No invoices found."}
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedItems.map((data: Invoice) => (
+                    <tr key={data._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <td>
+                        <div className="whitespace-nowrap font-semibold">{data.receiverName}</div>
+                        <div className="text-xs text-gray-500">{data.receiverEmail}</div>
+                      </td>
+                      <td>
+                        <div className="font-mono text-sm">{data.invoiceNumber}</div>
+                      </td>
+                      <td>
+                        <div className="whitespace-nowrap">
+                          {new Date(data.dueDate).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="font-semibold">{formatCurrency(getInvoiceTotal(data))}</div>
+                      </td>
+                      <td>
+                        <span
+                          className={`badge whitespace-nowrap ${
+                            data.status === "completed" || data.status === "paid"
+                              ? "bg-success"
+                              : data.status === "pending" || data.status === "Pending"
+                                ? "bg-warning"
+                                : data.status === "cancelled" || data.status === "Canceled"
+                                  ? "bg-danger"
+                                  : "bg-primary"
+                          }`}
+                        >
+                          {data.status}
+                        </span>
+                      </td>
+                      <td className="text-center">
+                        <div className="dropdown">
+                          <Dropdown
+                            offset={[0, 5]}
+                            button={
+                              <button className="btn btn-outline-primary btn-sm">
+                                <FaOptinMonster className="w-4 h-4" />
+                              </button>
+                            }
+                          >
+                            <ul>
+                              <li>
+                                <button
+                                  type="button"
+                                  className="flex items-center gap-2 w-full"
+                                  onClick={() => setViewInvoice(data?._id ?? null)}
+                                >
+                                  <IconEye className="w-4 h-4" />
+                                  View
+                                </button>
+                              </li>
+                              <li>
+                                {/* <button type="button" className="flex items-center gap-2 w-full">
+                                  <IconEdit className="w-4 h-4" />
+                                  Edit
+                                </button> */}
+                              </li>
+                              <li>
+                                <button type="button" className="flex items-center gap-2 w-full text-danger" onClick={()=> deleteInvoice(data?._id ? data._id : "")}>
+                                  <IconTrashLines className="w-4 h-4" />
+                                  Delete
+                                </button>
+                              </li>
+                            </ul>
+                          </Dropdown>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {filteredItems.length > pageSize && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-white-light dark:border-[#1b2e4b]">
+              <div className="text-sm text-gray-500">
+                Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, filteredItems.length)} of{" "}
+                {filteredItems.length} entries
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="btn btn-outline-primary btn-sm"
+                  onClick={() => setPage(page - 1)}
+                  disabled={page === 1}
+                >
+                  Previous
+                </button>
+                <span className="px-3 py-1 text-sm">
+                  Page {page} of {Math.ceil(filteredItems.length / pageSize)}
+                </span>
+                <button
+                  className="btn btn-outline-primary btn-sm"
+                  onClick={() => setPage(page + 1)}
+                  disabled={page >= Math.ceil(filteredItems.length / pageSize)}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        /* Invoice Preview */
+        <div className="relative">
+          {/* Header with controls */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 dark:bg-gray-800">
+            <h2 className="text-lg font-semibold">Invoice Preview</h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={downloadPDF}
+                disabled={downloadingPDF}
+                className="btn btn-primary btn-sm flex items-center gap-2"
+              >
+                <FaDownload className="w-4 h-4" />
+                {downloadingPDF ? "Generating PDF..." : "Download PDF"}
+              </button>
+              <button onClick={closeInvoiceView} className="btn btn-outline-secondary btn-sm flex items-center gap-2">
+                <FaTimes className="w-4 h-4" />
+                Close
+              </button>
+            </div>
+          </div>
+
+          {/* Invoice Content */}
+          <div className="overflow-auto max-h-[calc(100vh-120px)]">
+            {viewInvoiceData && (
+              <div
+                ref={invoiceRef}
+                className="bg-white p-8 max-w-4xl mx-auto shadow-lg"
+                style={{ fontFamily: "Arial, sans-serif" }}
+              >
+                {/* Header */}
+                <div className="flex justify-between items-start mb-8">
+                  <div>
+                    <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl mb-4">
+                      {company.companyName?.charAt(0) || "I"}
+                    </div>
+                    <div className="space-y-1">
+                      <div className="font-bold text-xl text-gray-800">{company.companyName}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <h1 className="text-4xl font-bold text-gray-800 mb-4">INVOICE</h1>
+                    <div className="space-y-2 text-gray-700">
+                      <div>
+                        <span className="font-semibold">Invoice #:</span> {viewInvoiceData.invoiceNumber}
+                      </div>
+                      <div>
+                        <span className="font-semibold">Date:</span>{" "}
+                        {new Date(viewInvoiceData.invoiceDate).toLocaleDateString("en-US")}
+                      </div>
+                      <div>
+                        <span className="font-semibold">Due Date:</span>{" "}
+                        {new Date(viewInvoiceData.dueDate).toLocaleDateString("en-US")}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bill To & Payment Details */}
+                <div className="grid grid-cols-2 gap-8 mb-8">
+                  <div>
+                    <h3 className="font-bold text-lg mb-4 text-gray-800">Bill To:</h3>
+                    <div className="space-y-1 text-gray-700">
+                      <div className="font-semibold text-gray-800">{viewInvoiceData.receiverName}</div>
+                      <div>{viewInvoiceData.receiverEmail}</div>
+                      <div>{viewInvoiceData.receiverAddress}</div>
+                      <div>{viewInvoiceData.receiverPhone}</div>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-4 text-gray-800">Payment Details:</h3>
+                    <div className="space-y-1 text-gray-700">
+                      <div>
+                        <span className="font-semibold">Bank:</span> {viewInvoiceData.bankName}
+                      </div>
+                      <div>
+                        <span className="font-semibold">Account:</span> {viewInvoiceData.accountNumber}
+                      </div>
+                      <div>
+                        <span className="font-semibold">IFSC:</span> {viewInvoiceData.ifscCode}
+                      </div>
+                      <div>
+                        <span className="font-semibold">UPI:</span> {viewInvoiceData.upiId}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Items Table */}
+                <div className="mb-8">
+                  <table className="w-full border-collapse border border-gray-300">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="border border-gray-300 p-3 text-left font-semibold">Item</th>
+                        <th className="border border-gray-300 p-3 text-center font-semibold w-20">Qty</th>
+                        <th className="border border-gray-300 p-3 text-right font-semibold w-24">Rate</th>
+                        <th className="border border-gray-300 p-3 text-right font-semibold w-24">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewInvoiceData.items?.map((item: InvoiceItem, index: number) => (
+                        <tr key={item.id || index}>
+                          <td className="border border-gray-300 p-3">
+                            <div className="font-semibold text-gray-800">{item.title}</div>
+                            <div className="text-sm text-gray-600">{item.description}</div>
+                          </td>
+                          <td className="border border-gray-300 p-3 text-center">{item.quantity}</td>
+                          <td className="border border-gray-300 p-3 text-right">{formatCurrency(item.rate || 0)}</td>
+                          <td className="border border-gray-300 p-3 text-right font-semibold">
+                            {formatCurrency(item.amount || 0)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Totals */}
+                <div className="flex justify-end mb-8">
+                  <div className="w-80">
+                    <div className="space-y-2 text-gray-700">
+                      <div className="flex justify-between py-1">
+                        <span>Subtotal:</span>
+                        <span>{formatCurrency(calculateSubtotal())}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span>Tax ({viewInvoiceData.tax || 0}%):</span>
+                        <span>{formatCurrency(calculateTaxAmount())}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span>Shipping:</span>
+                        <span>{formatCurrency(Number.parseFloat(viewInvoiceData.shippingCharges || "0"))}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span>Discount ({viewInvoiceData.discount || 0}%):</span>
+                        <span>-{formatCurrency(calculateDiscountAmount())}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-lg border-t border-gray-300 pt-2 mt-2">
+                        <span>Total:</span>
+                        <span>{formatCurrency(calculateTotal())}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {viewInvoiceData.notes && (
+                  <div className="border-t border-gray-300 pt-6">
+                    <h3 className="font-bold text-lg mb-2 text-gray-800">Notes:</h3>
+                    <p className="text-gray-700 whitespace-pre-wrap">{viewInvoiceData.notes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default List

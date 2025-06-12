@@ -25,7 +25,12 @@ interface emp {
   }
   
   interface company {
-    name: string;
+    companyName: string;
+    address: string;
+    accountNumber:string;
+    ifscCode:string;
+    upi:string;
+    bankName:string;
     adminEmail: string;
     subscription?: {
       plan: string;
@@ -149,10 +154,46 @@ interface emp {
 
   interface Supplier{
     _id?:string;
-    name:string;
+    company:string;
     email:string;
     mobile:string;
     serviceType:string;
+  }
+
+  interface InvoiceItem{
+    id: number;
+    title: string;
+    description: string;
+    quantity: number;
+    rate: number;
+    amount: number;
+  }0.
+
+  interface Invoice{
+    
+_id?:string;
+companyId:string;
+invoiceNumber:string;
+invoiceDate:Date;
+dueDate:Date;
+receiverName:string;
+receiverEmail:string;
+receiverPhone:string;
+receiverAddress:string;
+accountNumber:string;
+ifscCode:string;
+upiId:string;
+bankName:string;
+country:string;
+currency:string;
+tax:string;
+discount:string;
+shippingCharges:string;
+paymentMethod:string;
+notes:string;
+status:string;
+items:InvoiceItem[];
+
   }
   
   export type {
@@ -167,7 +208,9 @@ interface emp {
     followUp,
     Operations,
     Supplier,
-    Hotel
+    Hotel,
+    Invoice,
+    InvoiceItem,
   };
 
 

@@ -46,6 +46,7 @@ console.log('Auth in AddEmp:', auth);
         e.preventDefault();
         const data = new FormData(e.target);
         const values = Object.fromEntries(data.entries());
+
       
         try {
           const res = await axios.post(`${import.meta.env.VITE_BASE_URL}api/employee-login`, values);

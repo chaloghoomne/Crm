@@ -4,6 +4,8 @@ import AddEmployee from '../pages/AddEmployee';
 import AddLead from '../pages/AddLead';
 import Operations from '../pages/Operations';
 import path from 'path';
+import { elementClosest } from '@fullcalendar/core/internal';
+import AddSupplier from '../pages/AddSupplier';
 const Index = lazy(() => import('../pages/Index'));
 const Analytics = lazy(() => import('../pages/Analytics'));
 const Finance = lazy(() => import('../pages/Finance'));
@@ -151,7 +153,12 @@ const routes = [
         element : <Operations />,
     }
 ,
-
+    //Add Supplier
+    {
+        path : '/AddSupplier',
+        element : <AddSupplier />,
+    }
+,
     {
         path: '/apps/todolist',
         element: <Todolist />,

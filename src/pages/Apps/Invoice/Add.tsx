@@ -1,508 +1,914 @@
-import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { setPageTitle } from '../../../store/themeConfigSlice';
-import IconX from '../../../components/Icon/IconX';
-import IconDownload from '../../../components/Icon/IconDownload';
-import IconEye from '../../../components/Icon/IconEye';
-import IconSend from '../../../components/Icon/IconSend';
-import IconSave from '../../../components/Icon/IconSave';
+"use client"
+
+import { useState, useEffect, useRef } from "react"
+import { X, Download, Eye, Send, Save, Plus } from "lucide-react"
+import jsPDF from "jspdf"
+import html2canvas from "html2canvas"
+import axios from "axios"
+import { useSelector } from "react-redux"
+import { IRootState } from "../../../store"
+
+interface InvoiceItem {
+  id: number
+  title: string
+  description: string
+  quantity: number
+  rate: number
+  amount: number
+}
+
+interface Company {
+  companyName: string
+  address: string
+  adminEmail: string
+}
+
+interface InvoiceFormData {
+  invoiceNumber: string
+  invoiceLabel: string
+  invoiceDate: string
+  dueDate: string
+  receiverName: string
+  receiverEmail: string
+  receiverAddress: string
+  receiverPhone: string
+  accountNumber: string
+  bankName: string
+  ifscCode: string
+  upiId: string
+  country: string
+  currency: string
+  tax: number
+  discount: number
+  shippingCharge: number
+  paymentMethod: string
+  notes: string
+}
+
+const currencyList = [
+  "USD - US Dollar",
+  "GBP - British Pound",
+  "IDR - Indonesian Rupiah",
+  "INR - Indian Rupee",
+  "BRL - Brazilian Real",
+  "EUR - Germany (Euro)",
+  "TRY - Turkish Lira",
+]
+
+const countries = [
+  "United States",
+  "United Kingdom",
+  "Canada",
+  "Australia",
+  "Germany",
+  "Sweden",
+  "Denmark",
+  "Norway",
+  "New Zealand",
+  "India",
+  "China",
+  "Japan",
+]
 
 const Add = () => {
-    const dispatch = useDispatch();
-    useEffect(() => {
-        dispatch(setPageTitle('Invoice Add'));
-    });
-    const currencyList = ['USD - US Dollar', 'GBP - British Pound', 'IDR - Indonesian Rupiah', 'INR - Indian Rupee', 'BRL - Brazilian Real', 'EUR - Germany (Euro)', 'TRY - Turkish Lira'];
+  const [company,setCompany] = useState<Company>({
+    companyName: "Chalogoomne.com",
+    address: "123 Business Street, City, State 12345",
+    adminEmail: "b2b@chaloghoomne.com",
+  })
 
-    const [items, setItems] = useState<any>([
-        {
-            id: 1,
-            title: '',
-            description: '',
-            rate: 0,
-            quantity: 0,
-            amount: 0,
-        },
-    ]);
+  const [formData, setFormData] = useState<InvoiceFormData>({
+    invoiceNumber: "#8801",
+    invoiceLabel: "",
+    invoiceDate: new Date().toISOString().split("T")[0],
+    dueDate: "",
+    receiverName: "",
+    receiverEmail: "",
+    receiverAddress: "",
+    receiverPhone: "",
+    accountNumber: "",
+    bankName: "",
+    ifscCode: "",
+    upiId: "",
+    country: "",
+    currency: "USD - US Dollar",
+    tax: 0,
+    discount: 0,
+    shippingCharge: 0,
+    paymentMethod: "",
+    notes: "",
+  })
 
-    const addItem = () => {
-        let maxId = 0;
-        maxId = items?.length ? items.reduce((max: number, character: any) => (character.id > max ? character.id : max), items[0].id) : 0;
+  const [items, setItems] = useState<InvoiceItem[]>([
+    {
+      id: 1,
+      title: "",
+      description: "",
+      quantity: 1,
+      rate: 0,
+      amount: 0,
+    },
+  ])
+  const companyId = useSelector((state:IRootState)=>state.auth.company_id)
+  const [showPreview, setShowPreview] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const previewRef = useRef<HTMLDivElement>(null)
 
-        setItems([...items, { id: maxId + 1, title: '', description: '', rate: 0, quantity: 0, amount: 0 }]);
-    };
+  // Calculate amount for each item when quantity or rate changes
+  useEffect(() => {
+    setItems((prevItems) =>
+      prevItems.map((item) => ({
+        ...item,
+        amount: item.quantity * item.rate,
+      })),
+    )
+  }, [])
 
-    const removeItem = (item: any = null) => {
-        setItems(items.filter((d: any) => d.id !== item.id));
-    };
+  useEffect(()=>{
+    const fetchCompanyDetails = async () => {
+    const res =await axios.get(`${import.meta.env.VITE_BASE_URL}api/getcompanydetails/${companyId}`);
+    console.log(res.data);
+    setCompany(res.data);
+      
+    }
+    fetchCompanyDetails();
 
-    const changeQuantityPrice = (type: string, value: string, id: number) => {
-        const list = items;
-        const item = list.find((d: any) => d.id === id);
-        if (type === 'quantity') {
-            item.quantity = Number(value);
+  },[])
+
+  const addItem = () => {
+    const maxId = items.length ? Math.max(...items.map((item) => item.id)) : 0
+    setItems([
+      ...items,
+      {
+        id: maxId + 1,
+        title: "",
+        description: "",
+        quantity: 1,
+        rate: 0,
+        amount: 0,
+      },
+    ])
+  }
+
+  const removeItem = (itemToRemove: InvoiceItem) => {
+    if (items.length > 1) {
+      setItems(items.filter((item) => item.id !== itemToRemove.id))
+    }
+  }
+
+  const updateItem = (id: number, field: keyof InvoiceItem, value: string | number) => {
+    setItems((prevItems) =>
+      prevItems.map((item) => {
+        if (item.id === id) {
+          const updatedItem = { ...item, [field]: value }
+          // Recalculate amount when quantity or rate changes
+          if (field === "quantity" || field === "rate") {
+            updatedItem.amount = updatedItem.quantity * updatedItem.rate
+          }
+          return updatedItem
         }
-        if (type === 'price') {
-            item.amount = Number(value);
-        }
-        setItems([...list]);
-    };
+        return item
+      }),
+    )
+  }
 
-    return (
-        <div className="flex xl:flex-row flex-col gap-2.5">
-            <div className="panel px-0 flex-1 py-6 ltr:xl:mr-6 rtl:xl:ml-6">
-                <div className="flex justify-between flex-wrap px-4">
-                    <div className="mb-6 lg:w-1/2 w-full">
-                        <div className="flex items-center text-black dark:text-white shrink-0">
-                            <img src="/assets/images/logo.svg" alt="img" className="w-14" />
-                        </div>
-                        <div className="space-y-1 mt-6 text-gray-500 dark:text-gray-400">
-                            <div>13 Tetrick Road, Cypress Gardens, Florida, 33884, US</div>
-                            <div>vristo@gmail.com</div>
-                            <div>+1 (070) 123-4567</div>
-                        </div>
-                    </div>
-                    <div className="lg:w-1/2 w-full lg:max-w-fit">
-                        <div className="flex items-center">
-                            <label htmlFor="number" className="flex-1 ltr:mr-2 rtl:ml-2 mb-0">
-                                Invoice Number
-                            </label>
-                            <input id="number" type="text" name="inv-num" className="form-input lg:w-[250px] w-2/3" placeholder="#8801" />
-                        </div>
-                        <div className="flex items-center mt-4">
-                            <label htmlFor="invoiceLabel" className="flex-1 ltr:mr-2 rtl:ml-2 mb-0">
-                                Invoice Label
-                            </label>
-                            <input id="invoiceLabel" type="text" name="inv-label" className="form-input lg:w-[250px] w-2/3" placeholder="Enter Invoice Label" />
-                        </div>
-                        <div className="flex items-center mt-4">
-                            <label htmlFor="startDate" className="flex-1 ltr:mr-2 rtl:ml-2 mb-0">
-                                Invoice Date
-                            </label>
-                            <input id="startDate" type="date" name="inv-date" className="form-input lg:w-[250px] w-2/3" />
-                        </div>
-                        <div className="flex items-center mt-4">
-                            <label htmlFor="dueDate" className="flex-1 ltr:mr-2 rtl:ml-2 mb-0">
-                                Due Date
-                            </label>
-                            <input id="dueDate" type="date" name="due-date" className="form-input lg:w-[250px] w-2/3" />
-                        </div>
-                    </div>
-                </div>
-                <hr className="border-white-light dark:border-[#1b2e4b] my-6" />
-                <div className="mt-8 px-4">
-                    <div className="flex justify-between lg:flex-row flex-col">
-                        <div className="lg:w-1/2 w-full ltr:lg:mr-6 rtl:lg:ml-6 mb-6">
-                            <div className="text-lg">Bill To :-</div>
-                            <div className="mt-4 flex items-center">
-                                <label htmlFor="reciever-name" className="ltr:mr-2 rtl:ml-2 w-1/3 mb-0">
-                                    Name
-                                </label>
-                                <input id="reciever-name" type="text" name="reciever-name" className="form-input flex-1" placeholder="Enter Name" />
-                            </div>
-                            <div className="mt-4 flex items-center">
-                                <label htmlFor="reciever-email" className="ltr:mr-2 rtl:ml-2 w-1/3 mb-0">
-                                    Email
-                                </label>
-                                <input id="reciever-email" type="email" name="reciever-email" className="form-input flex-1" placeholder="Enter Email" />
-                            </div>
-                            <div className="mt-4 flex items-center">
-                                <label htmlFor="reciever-address" className="ltr:mr-2 rtl:ml-2 w-1/3 mb-0">
-                                    Address
-                                </label>
-                                <input id="reciever-address" type="text" name="reciever-address" className="form-input flex-1" placeholder="Enter Address" />
-                            </div>
-                            <div className="mt-4 flex items-center">
-                                <label htmlFor="reciever-number" className="ltr:mr-2 rtl:ml-2 w-1/3 mb-0">
-                                    Phone Number
-                                </label>
-                                <input id="reciever-number" type="text" name="reciever-number" className="form-input flex-1" placeholder="Enter Phone number" />
-                            </div>
-                        </div>
-                        <div className="lg:w-1/2 w-full">
-                            <div className="text-lg">Payment Details:</div>
-                            <div className="flex items-center mt-4">
-                                <label htmlFor="acno" className="ltr:mr-2 rtl:ml-2 w-1/3 mb-0">
-                                    Account Number
-                                </label>
-                                <input id="acno" type="text" name="acno" className="form-input flex-1" placeholder="Enter Account Number" />
-                            </div>
-                            <div className="flex items-center mt-4">
-                                <label htmlFor="bank-name" className="ltr:mr-2 rtl:ml-2 w-1/3 mb-0">
-                                    Bank Name
-                                </label>
-                                <input id="bank-name" type="text" name="bank-name" className="form-input flex-1" placeholder="Enter Bank Name" />
-                            </div>
-                            <div className="flex items-center mt-4">
-                                <label htmlFor="swift-code" className="ltr:mr-2 rtl:ml-2 w-1/3 mb-0">
-                                    SWIFT Number
-                                </label>
-                                <input id="swift-code" type="text" name="swift-code" className="form-input flex-1" placeholder="Enter SWIFT Number" />
-                            </div>
-                            <div className="flex items-center mt-4">
-                                <label htmlFor="iban-code" className="ltr:mr-2 rtl:ml-2 w-1/3 mb-0">
-                                    IBAN Number
-                                </label>
-                                <input id="iban-code" type="text" name="iban-code" className="form-input flex-1" placeholder="Enter IBAN Number" />
-                            </div>
-                            <div className="flex items-center mt-4">
-                                <label htmlFor="country" className="ltr:mr-2 rtl:ml-2 w-1/3 mb-0">
-                                    Country
-                                </label>
-                                <select id="country" name="country" className="form-select flex-1">
-                                    <option value="">Choose Country</option>
-                                    <option value="United States">United States</option>
-                                    <option value="United Kingdom">United Kingdom</option>
-                                    <option value="Canada">Canada</option>
-                                    <option value="Australia">Australia</option>
-                                    <option value="Germany">Germany</option>
-                                    <option value="Sweden">Sweden</option>
-                                    <option value="Denmark">Denmark</option>
-                                    <option value="Norway">Norway</option>
-                                    <option value="New-Zealand">New Zealand</option>
-                                    <option value="Afghanistan">Afghanistan</option>
-                                    <option value="Albania">Albania</option>
-                                    <option value="Algeria">Algeria</option>
-                                    <option value="American-Samoa">Andorra</option>
-                                    <option value="Angola">Angola</option>
-                                    <option value="Antigua Barbuda">Antigua &amp; Barbuda</option>
-                                    <option value="Argentina">Argentina</option>
-                                    <option value="Armenia">Armenia</option>
-                                    <option value="Aruba">Aruba</option>
-                                    <option value="Austria">Austria</option>
-                                    <option value="Azerbaijan">Azerbaijan</option>
-                                    <option value="Bahamas">Bahamas</option>
-                                    <option value="Bahrain">Bahrain</option>
-                                    <option value="Bangladesh">Bangladesh</option>
-                                    <option value="Barbados">Barbados</option>
-                                    <option value="Belarus">Belarus</option>
-                                    <option value="Belgium">Belgium</option>
-                                    <option value="Belize">Belize</option>
-                                    <option value="Benin">Benin</option>
-                                    <option value="Bermuda">Bermuda</option>
-                                    <option value="Bhutan">Bhutan</option>
-                                    <option value="Bolivia">Bolivia</option>
-                                    <option value="Bosnia">Bosnia &amp; Herzegovina</option>
-                                    <option value="Botswana">Botswana</option>
-                                    <option value="Brazil">Brazil</option>
-                                    <option value="British">British Virgin Islands</option>
-                                    <option value="Brunei">Brunei</option>
-                                    <option value="Bulgaria">Bulgaria</option>
-                                    <option value="Burkina">Burkina Faso</option>
-                                    <option value="Burundi">Burundi</option>
-                                    <option value="Cambodia">Cambodia</option>
-                                    <option value="Cameroon">Cameroon</option>
-                                    <option value="Cape">Cape Verde</option>
-                                    <option value="Cayman">Cayman Islands</option>
-                                    <option value="Central-African">Central African Republic</option>
-                                    <option value="Chad">Chad</option>
-                                    <option value="Chile">Chile</option>
-                                    <option value="China">China</option>
-                                    <option value="Colombia">Colombia</option>
-                                    <option value="Comoros">Comoros</option>
-                                    <option value="Costa-Rica">Costa Rica</option>
-                                    <option value="Croatia">Croatia</option>
-                                    <option value="Cuba">Cuba</option>
-                                    <option value="Cyprus">Cyprus</option>
-                                    <option value="Czechia">Czechia</option>
-                                    <option value="Côte">Côte d'Ivoire</option>
-                                    <option value="Djibouti">Djibouti</option>
-                                    <option value="Dominica">Dominica</option>
-                                    <option value="Dominican">Dominican Republic</option>
-                                    <option value="Ecuador">Ecuador</option>
-                                    <option value="Egypt">Egypt</option>
-                                    <option value="El-Salvador">El Salvador</option>
-                                    <option value="Equatorial-Guinea">Equatorial Guinea</option>
-                                    <option value="Eritrea">Eritrea</option>
-                                    <option value="Estonia">Estonia</option>
-                                    <option value="Ethiopia">Ethiopia</option>
-                                    <option value="Fiji">Fiji</option>
-                                    <option value="Finland">Finland</option>
-                                    <option value="France">France</option>
-                                    <option value="Gabon">Gabon</option>
-                                    <option value="Georgia">Georgia</option>
-                                    <option value="Ghana">Ghana</option>
-                                    <option value="Greece">Greece</option>
-                                    <option value="Grenada">Grenada</option>
-                                    <option value="Guatemala">Guatemala</option>
-                                    <option value="Guernsey">Guernsey</option>
-                                    <option value="Guinea">Guinea</option>
-                                    <option value="Guinea-Bissau">Guinea-Bissau</option>
-                                    <option value="Guyana">Guyana</option>
-                                    <option value="Haiti">Haiti</option>
-                                    <option value="Honduras">Honduras</option>
-                                    <option value="Hong-Kong">Hong Kong SAR China</option>
-                                    <option value="Hungary">Hungary</option>
-                                    <option value="Iceland">Iceland</option>
-                                    <option value="India">India</option>
-                                    <option value="Indonesia">Indonesia</option>
-                                    <option value="Iran">Iran</option>
-                                    <option value="Iraq">Iraq</option>
-                                    <option value="Ireland">Ireland</option>
-                                    <option value="Israel">Israel</option>
-                                    <option value="Italy">Italy</option>
-                                    <option value="Jamaica">Jamaica</option>
-                                    <option value="Japan">Japan</option>
-                                    <option value="Jordan">Jordan</option>
-                                    <option value="Kazakhstan">Kazakhstan</option>
-                                    <option value="Kenya">Kenya</option>
-                                    <option value="Kuwait">Kuwait</option>
-                                    <option value="Kyrgyzstan">Kyrgyzstan</option>
-                                    <option value="Laos">Laos</option>
-                                    <option value="Latvia">Latvia</option>
-                                    <option value="Lebanon">Lebanon</option>
-                                    <option value="Lesotho">Lesotho</option>
-                                    <option value="Liberia">Liberia</option>
-                                    <option value="Libya">Libya</option>
-                                    <option value="Liechtenstein">Liechtenstein</option>
-                                    <option value="Lithuania">Lithuania</option>
-                                    <option value="Luxembourg">Luxembourg</option>
-                                    <option value="Macedonia">Macedonia</option>
-                                    <option value="Madagascar">Madagascar</option>
-                                    <option value="Malawi">Malawi</option>
-                                    <option value="Malaysia">Malaysia</option>
-                                    <option value="Maldives">Maldives</option>
-                                    <option value="Mali">Mali</option>
-                                    <option value="Malta">Malta</option>
-                                    <option value="Mauritania">Mauritania</option>
-                                    <option value="Mauritius">Mauritius</option>
-                                    <option value="Mexico">Mexico</option>
-                                    <option value="Moldova">Moldova</option>
-                                    <option value="Monaco">Monaco</option>
-                                    <option value="Mongolia">Mongolia</option>
-                                    <option value="Montenegro">Montenegro</option>
-                                    <option value="Morocco">Morocco</option>
-                                    <option value="Mozambique">Mozambique</option>
-                                    <option value="Myanmar">Myanmar (Burma)</option>
-                                    <option value="Namibia">Namibia</option>
-                                    <option value="Nepal">Nepal</option>
-                                    <option value="Netherlands">Netherlands</option>
-                                    <option value="Nicaragua">Nicaragua</option>
-                                    <option value="Niger">Niger</option>
-                                    <option value="Nigeria">Nigeria</option>
-                                    <option value="North-Korea">North Korea</option>
-                                    <option value="Oman">Oman</option>
-                                    <option value="Pakistan">Pakistan</option>
-                                    <option value="Palau">Palau</option>
-                                    <option value="Palestinian">Palestinian Territories</option>
-                                    <option value="Panama">Panama</option>
-                                    <option value="Papua">Papua New Guinea</option>
-                                    <option value="Paraguay">Paraguay</option>
-                                    <option value="Peru">Peru</option>
-                                    <option value="Philippines">Philippines</option>
-                                    <option value="Poland">Poland</option>
-                                    <option value="Portugal">Portugal</option>
-                                    <option value="Puerto">Puerto Rico</option>
-                                    <option value="Qatar">Qatar</option>
-                                    <option value="Romania">Romania</option>
-                                    <option value="Russia">Russia</option>
-                                    <option value="Rwanda">Rwanda</option>
-                                    <option value="Réunion">Réunion</option>
-                                    <option value="Samoa">Samoa</option>
-                                    <option value="San-Marino">San Marino</option>
-                                    <option value="Saudi-Arabia">Saudi Arabia</option>
-                                    <option value="Senegal">Senegal</option>
-                                    <option value="Serbia">Serbia</option>
-                                    <option value="Seychelles">Seychelles</option>
-                                    <option value="Sierra-Leone">Sierra Leone</option>
-                                    <option value="Singapore">Singapore</option>
-                                    <option value="Slovakia">Slovakia</option>
-                                    <option value="Slovenia">Slovenia</option>
-                                    <option value="Solomon-Islands">Solomon Islands</option>
-                                    <option value="Somalia">Somalia</option>
-                                    <option value="South-Africa">South Africa</option>
-                                    <option value="South-Korea">South Korea</option>
-                                    <option value="Spain">Spain</option>
-                                    <option value="Sri-Lanka">Sri Lanka</option>
-                                    <option value="Sudan">Sudan</option>
-                                    <option value="Suriname">Suriname</option>
-                                    <option value="Swaziland">Swaziland</option>
-                                    <option value="Switzerland">Switzerland</option>
-                                    <option value="Syria">Syria</option>
-                                    <option value="Sao-Tome-and-Principe">São Tomé &amp; Príncipe</option>
-                                    <option value="Tajikistan">Tajikistan</option>
-                                    <option value="Tanzania">Tanzania</option>
-                                    <option value="Thailand">Thailand</option>
-                                    <option value="Timor-Leste">Timor-Leste</option>
-                                    <option value="Togo">Togo</option>
-                                    <option value="Tonga">Tonga</option>
-                                    <option value="Trinidad-and-Tobago">Trinidad &amp; Tobago</option>
-                                    <option value="Tunisia">Tunisia</option>
-                                    <option value="Turkey">Turkey</option>
-                                    <option value="Turkmenistan">Turkmenistan</option>
-                                    <option value="Uganda">Uganda</option>
-                                    <option value="Ukraine">Ukraine</option>
-                                    <option value="UAE">United Arab Emirates</option>
-                                    <option value="Uruguay">Uruguay</option>
-                                    <option value="Uzbekistan">Uzbekistan</option>
-                                    <option value="Vanuatu">Vanuatu</option>
-                                    <option value="Venezuela">Venezuela</option>
-                                    <option value="Vietnam">Vietnam</option>
-                                    <option value="Yemen">Yemen</option>
-                                    <option value="Zambia">Zambia</option>
-                                    <option value="Zimbabwe">Zimbabwe</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="mt-8">
-                    <div className="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Item</th>
-                                    <th className="w-1">Quantity</th>
-                                    <th className="w-1">Price</th>
-                                    <th>Total</th>
-                                    <th className="w-1"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {items.length <= 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="!text-center font-semibold">
-                                            No Item Available
-                                        </td>
-                                    </tr>
-                                )}
-                                {items.map((item: any) => {
-                                    return (
-                                        <tr className="align-top" key={item.id}>
-                                            <td>
-                                                <input type="text" className="form-input min-w-[200px]" placeholder="Enter Item Name" defaultValue={item.title} />
-                                                <textarea className="form-textarea mt-4" placeholder="Enter Description" defaultValue={item.description}></textarea>
-                                            </td>
-                                            <td>
-                                                <input
-                                                    type="number"
-                                                    className="form-input w-32"
-                                                    placeholder="Quantity"
-                                                    min={0}
-                                                    defaultValue={item.quantity}
-                                                    onChange={(e) => changeQuantityPrice('quantity', e.target.value, item.id)}
-                                                />
-                                            </td>
-                                            <td>
-                                                <input
-                                                    type="number"
-                                                    className="form-input w-32"
-                                                    placeholder="Price"
-                                                    min={0}
-                                                    defaultValue={item.amount}
-                                                    onChange={(e) => changeQuantityPrice('price', e.target.value, item.id)}
-                                                />
-                                            </td>
-                                            <td>${item.quantity * item.amount}</td>
-                                            <td>
-                                                <button type="button" onClick={() => removeItem(item)}>
-                                                    <IconX className="w-5 h-5" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div className="flex justify-between sm:flex-row flex-col mt-6 px-4">
-                        <div className="sm:mb-0 mb-6">
-                            <button type="button" className="btn btn-primary" onClick={() => addItem()}>
-                                Add Item
-                            </button>
-                        </div>
-                        <div className="sm:w-2/5">
-                            <div className="flex items-center justify-between">
-                                <div>Subtotal</div>
-                                <div>$0.00</div>
-                            </div>
-                            <div className="flex items-center justify-between mt-4">
-                                <div>Tax(%)</div>
-                                <div>0%</div>
-                            </div>
-                            <div className="flex items-center justify-between mt-4">
-                                <div>Shipping Rate($)</div>
-                                <div>$0.00</div>
-                            </div>
-                            <div className="flex items-center justify-between mt-4">
-                                <div>Discount(%)</div>
-                                <div>0%</div>
-                            </div>
-                            <div className="flex items-center justify-between mt-4 font-semibold">
-                                <div>Total</div>
-                                <div>$0.00</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="mt-8 px-4">
-                    <label htmlFor="notes">Notes</label>
-                    <textarea id="notes" name="notes" className="form-textarea min-h-[130px]" placeholder="Notes...."></textarea>
-                </div>
-            </div>
-            <div className="xl:w-96 w-full xl:mt-0 mt-6">
-                <div className="panel mb-5">
-                    <label htmlFor="currency">Currency</label>
-                    <select id="currency" name="currency" className="form-select">
-                        {currencyList.map((i) => (
-                            <option key={i}>{i}</option>
-                        ))}
-                    </select>
-                    <div className="mt-4">
-                        <div className="grid sm:grid-cols-2 grid-cols-1 gap-4">
-                            <div>
-                                <label htmlFor="tax">Tax(%) </label>
-                                <input id="tax" type="number" name="tax" className="form-input" defaultValue={0} placeholder="Tax" />
-                            </div>
-                            <div>
-                                <label htmlFor="discount">Discount(%) </label>
-                                <input id="discount" type="number" name="discount" className="form-input" defaultValue={0} placeholder="Discount" />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="mt-4">
-                        <div>
-                            <label htmlFor="shipping-charge">Shipping Charge($) </label>
-                            <input id="shipping-charge" type="number" name="shipping-charge" className="form-input" defaultValue={0} placeholder="Shipping Charge" />
-                        </div>
-                    </div>
-                    <div className="mt-4">
-                        <label htmlFor="payment-method">Accept Payment Via</label>
-                        <select id="payment-method" name="payment-method" className="form-select">
-                            <option value=" ">Select Payment</option>
-                            <option value="bank">Bank Account</option>
-                            <option value="paypal">Paypal</option>
-                            <option value="upi">UPI Transfer</option>
-                        </select>
-                    </div>
-                </div>
-                <div className="panel">
-                    <div className="grid xl:grid-cols-1 lg:grid-cols-4 sm:grid-cols-2 grid-cols-1 gap-4">
-                        <button type="button" className="btn btn-success w-full gap-2">
-                            <IconSave className="ltr:mr-2 rtl:ml-2 shrink-0" />
-                            Save
-                        </button>
+  const updateFormData = (field: keyof InvoiceFormData, value: string | number) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
 
-                        <button type="button" className="btn btn-info w-full gap-2">
-                            <IconSend className="ltr:mr-2 rtl:ml-2 shrink-0" />
-                            Send Invoice
-                        </button>
+  // Calculation functions
+  const calculateSubtotal = () => {
+    return items.reduce((sum, item) => sum + item.amount, 0)
+  }
 
-                        <Link to="/apps/invoice/preview" className="btn btn-primary w-full gap-2">
-                            <IconEye className="ltr:mr-2 rtl:ml-2 shrink-0" />
-                            Preview
-                        </Link>
+  const calculateTaxAmount = () => {
+    return (calculateSubtotal() * formData.tax) / 100
+  }
 
-                        <button type="button" className="btn btn-secondary w-full gap-2">
-                            <IconDownload className="ltr:mr-2 rtl:ml-2 shrink-0" />
-                            Download
-                        </button>
-                    </div>
-                </div>
-            </div>
+  const calculateDiscountAmount = () => {
+    return (calculateSubtotal() * formData.discount) / 100
+  }
+
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal()
+    const taxAmount = calculateTaxAmount()
+    const discountAmount = calculateDiscountAmount()
+    return subtotal + taxAmount - discountAmount + formData.shippingCharge
+  }
+
+  const formatCurrency = (amount: number) => {
+    const currencySymbol = formData.currency.includes("USD")
+      ? "$"
+      : formData.currency.includes("GBP")
+        ? "£"
+        : formData.currency.includes("EUR")
+          ? "€"
+          : formData.currency.includes("INR")
+            ? "₹"
+            : "$"
+    return `${currencySymbol}${amount.toFixed(2)}`
+  }
+
+  // API Functions - Simplified
+  const saveInvoice = async () => {
+    setIsLoading(true)
+    try {
+      // Simulate API call
+      // await new Promise((resolve) => setTimeout(resolve, 1000))
+      const values = {...formData,items,companyId}
+      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}api/createInvoice`,values)
+      console.log("Saving invoice:", { formData, items })
+      alert("Invoice saved successfully!")
+    } catch (error) {
+      alert("Failed to save invoice")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const sendInvoice = async () => {
+    if (!formData.receiverEmail) {
+      alert("Please enter receiver email address")
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      console.log("Sending invoice to:", formData.receiverEmail)
+      alert(`Invoice sent successfully to ${formData.receiverEmail}!`)
+    } catch (error) {
+      alert("Failed to send invoice")
+      console.log("Failed To send Invoice                          ")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const downloadPDF = async () => {
+    if (!previewRef.current) return
+
+    setIsLoading(true)
+    try {
+      // Show preview temporarily if not visible
+      const wasPreviewVisible = showPreview
+      if (!wasPreviewVisible) {
+        setShowPreview(true)
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+
+      const canvas = await html2canvas(previewRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      })
+
+      const imgData = canvas.toDataURL("image/png")
+      const pdf = new jsPDF("p", "mm", "a4")
+
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = canvas.width
+      const imgHeight = canvas.height
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+
+      const imgX = (pdfWidth - imgWidth * ratio) / 2
+      const imgY = 10
+
+      pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio)
+      pdf.save(`invoice-${formData.invoiceNumber}.pdf`)
+
+      // Hide preview if it wasn't visible before
+      if (!wasPreviewVisible) {
+        setShowPreview(false)
+      }
+    } catch (error) {
+      alert("Failed to generate PDF")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSave = () => saveInvoice()
+  const handleSend = () => sendInvoice()
+  const handlePreview = () => setShowPreview(true)
+  const handleDownload = () => downloadPDF()
+
+  // Invoice Preview Component
+  const InvoicePreview = () => (
+    <div ref={previewRef} className="bg-white p-8 max-w-4xl mx-auto" style={{ fontFamily: "Arial, sans-serif" }}>
+      {/* Header */}
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl mb-4">
+            {company.companyName.charAt(0)}
+          </div>
+          <div className="space-y-1">
+            <div className="font-bold text-xl text-gray-800">{company.companyName}</div>
+            <div className="text-gray-600">{company.address}</div>
+            <div className="text-gray-600">{company.adminEmail}</div>
+          </div>
         </div>
-    );
-};
+        <div className="text-right">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">INVOICE</h1>
+          <div className="space-y-2 text-gray-700">
+            <div>
+              <span className="font-semibold">Invoice #:</span> {formData.invoiceNumber}
+            </div>
+            <div>
+              <span className="font-semibold">Date:</span> {formData.invoiceDate}
+            </div>
+            <div>
+              <span className="font-semibold">Due Date:</span> {formData.dueDate}
+            </div>
+          </div>
+        </div>
+      </div>
 
-export default Add;
+      {/* Bill To & Payment Details */}
+      <div className="grid grid-cols-2 gap-8 mb-8">
+        <div>
+          <h3 className="font-bold text-lg mb-4 text-gray-800">Bill To:</h3>
+          <div className="space-y-1 text-gray-700">
+            <div className="font-semibold text-gray-800">{formData.receiverName}</div>
+            <div>{formData.receiverEmail}</div>
+            <div>{formData.receiverAddress}</div>
+            <div>{formData.receiverPhone}</div>
+          </div>
+        </div>
+        <div>
+          <h3 className="font-bold text-lg mb-4 text-gray-800">Payment Details:</h3>
+          <div className="space-y-1 text-gray-700">
+            <div>
+              <span className="font-semibold">Bank:</span> {formData.bankName}
+            </div>
+            <div>
+              <span className="font-semibold">Account:</span> {formData.accountNumber}
+            </div>
+            <div>
+              <span className="font-semibold">IFSC:</span> {formData.ifscCode}
+            </div>
+            <div>
+              <span className="font-semibold">UPI:</span> {formData.upiId}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Items Table */}
+      <div className="mb-8">
+        <table className="w-full border-collapse border border-gray-300">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 p-3 text-left font-semibold">Item</th>
+              <th className="border border-gray-300 p-3 text-center font-semibold w-20">Qty</th>
+              <th className="border border-gray-300 p-3 text-right font-semibold w-24">Rate</th>
+              <th className="border border-gray-300 p-3 text-right font-semibold w-24">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id}>
+                <td className="border border-gray-300 p-3">
+                  <div className="font-semibold text-gray-800">{item.title}</div>
+                  <div className="text-sm text-gray-600">{item.description}</div>
+                </td>
+                <td className="border border-gray-300 p-3 text-center">{item.quantity}</td>
+                <td className="border border-gray-300 p-3 text-right">{formatCurrency(item.rate)}</td>
+                <td className="border border-gray-300 p-3 text-right font-semibold">{formatCurrency(item.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Totals */}
+      <div className="flex justify-end mb-8">
+        <div className="w-80">
+          <div className="space-y-2 text-gray-700">
+            <div className="flex justify-between py-1">
+              <span>Subtotal:</span>
+              <span>{formatCurrency(calculateSubtotal())}</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span>Tax ({formData.tax}%):</span>
+              <span>{formatCurrency(calculateTaxAmount())}</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span>Shipping:</span>
+              <span>{formatCurrency(formData.shippingCharge)}</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span>Discount ({formData.discount}%):</span>
+              <span>-{formatCurrency(calculateDiscountAmount())}</span>
+            </div>
+            <div className="flex justify-between font-bold text-lg border-t border-gray-300 pt-2 mt-2">
+              <span>Total:</span>
+              <span>{formatCurrency(calculateTotal())}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notes */}
+      {formData.notes && (
+        <div className="border-t border-gray-300 pt-6">
+          <h3 className="font-bold text-lg mb-2 text-gray-800">Notes:</h3>
+          <p className="text-gray-700 whitespace-pre-wrap">{formData.notes}</p>
+        </div>
+      )}
+    </div>
+  )
+
+  return (
+    <>
+      <div className="container mx-auto p-6 max-w-7xl">
+        <div className="flex flex-col xl:flex-row gap-6">
+          {/* Main Invoice Form */}
+          <div className="flex-1">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              {/* Header Section */}
+              <div className="flex flex-col lg:flex-row justify-between mb-8">
+                <div className="mb-6 lg:mb-0">
+                  <div className="flex items-center mb-4">
+                    <div className="w-14 h-14 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                      {company.companyName.charAt(0)}
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-gray-500">
+                    <div className="font-semibold text-gray-800">{company.companyName}</div>
+                    <div>{company.address}</div>
+                    <div>{company.adminEmail}</div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 lg:w-80">
+                  <div className="flex items-center gap-4">
+                    <label className="w-32 text-gray-700">Invoice Number</label>
+                    <input
+                      type="text"
+                      value={formData.invoiceNumber}
+                      onChange={(e: any) => updateFormData("invoiceNumber", e.target.value)}
+                      placeholder="#8801"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <label className="w-32 text-gray-700">Invoice Label</label>
+                    <input
+                      type="text"
+                      value={formData.invoiceLabel}
+                      onChange={(e: any) => updateFormData("invoiceLabel", e.target.value)}
+                      placeholder="Enter Invoice Label"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <label className="w-32 text-gray-700">Invoice Date</label>
+                    <input
+                      type="date"
+                      value={formData.invoiceDate}
+                      onChange={(e: any) => updateFormData("invoiceDate", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <label className="w-32 text-gray-700">Due Date</label>
+                    <input
+                      type="date"
+                      value={formData.dueDate}
+                      onChange={(e: any) => updateFormData("dueDate", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <hr className="border-gray-200 my-6" />
+
+              {/* Bill To and Payment Details */}
+              <div className="grid lg:grid-cols-2 gap-8 mb-8">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Bill To:</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <label className="w-24 text-gray-700">Name</label>
+                      <input
+                        type="text"
+                        value={formData.receiverName}
+                        onChange={(e: any) => updateFormData("receiverName", e.target.value)}
+                        placeholder="Enter Name"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <label className="w-24 text-gray-700">Email</label>
+                      <input
+                        type="email"
+                        value={formData.receiverEmail}
+                        onChange={(e: any) => updateFormData("receiverEmail", e.target.value)}
+                        placeholder="Enter Email"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <label className="w-24 text-gray-700">Address</label>
+                      <input
+                        type="text"
+                        value={formData.receiverAddress}
+                        onChange={(e: any) => updateFormData("receiverAddress", e.target.value)}
+                        placeholder="Enter Address"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <label className="w-24 text-gray-700">Phone</label>
+                      <input
+                        type="text"
+                        value={formData.receiverPhone}
+                        onChange={(e: any) => updateFormData("receiverPhone", e.target.value)}
+                        placeholder="Enter Phone"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Payment Details:</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <label className="w-24 text-gray-700">Account No.</label>
+                      <input
+                        type="text"
+                        value={formData.accountNumber}
+                        onChange={(e: any) => updateFormData("accountNumber", e.target.value)}
+                        placeholder="Account Number"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <label className="w-24 text-gray-700">Bank Name</label>
+                      <input
+                        type="text"
+                        value={formData.bankName}
+                        onChange={(e: any) => updateFormData("bankName", e.target.value)}
+                        placeholder="Bank Name"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <label className="w-24 text-gray-700">IFSC Code</label>
+                      <input
+                        type="text"
+                        value={formData.ifscCode}
+                        onChange={(e: any) => updateFormData("ifscCode", e.target.value)}
+                        placeholder="IFSC Code"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <label className="w-24 text-gray-700">UPI ID</label>
+                      <input
+                        type="text"
+                        value={formData.upiId}
+                        onChange={(e: any) => updateFormData("upiId", e.target.value)}
+                        placeholder="UPI ID"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <label className="w-24 text-gray-700">Country</label>
+                      <select
+                        value={formData.country}
+                        onChange={(e: any) => updateFormData("country", e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Choose Country</option>
+                        {countries.map((country) => (
+                          <option key={country} value={country}>
+                            {country}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items Table */}
+              <div className="mb-8 overflow-x-auto">
+                <table className="min-w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-4 py-2 text-left text-gray-700 border-b">Item</th>
+                      <th className="px-4 py-2 text-left text-gray-700 border-b w-32">Quantity</th>
+                      <th className="px-4 py-2 text-left text-gray-700 border-b w-32">Rate</th>
+                      <th className="px-4 py-2 text-left text-gray-700 border-b w-32">Total</th>
+                      <th className="px-4 py-2 text-left text-gray-700 border-b w-12"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-2 text-center font-semibold">
+                          No Item Available
+                        </td>
+                      </tr>
+                    )}
+                    {items.map((item) => (
+                      <tr key={item.id} className="border-b">
+                        <td className="px-4 py-4">
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={item.title}
+                              onChange={(e: any) => updateItem(item.id, "title", e.target.value)}
+                              placeholder="Enter Item Name"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]"
+                            />
+                            <textarea
+                              value={item.description}
+                              onChange={(e: any) => updateItem(item.id, "description", e.target.value)}
+                              placeholder="Enter Description"
+                              rows={2}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <input
+                            type="number"
+                            min="0"
+                            value={item.quantity}
+                            onChange={(e: any) => updateItem(item.id, "quantity", Number(e.target.value) || 0)}
+                            placeholder="Quantity"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-4 py-4">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.rate}
+                            onChange={(e: any) => updateItem(item.id, "rate", Number(e.target.value) || 0)}
+                            placeholder="Rate"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-32"
+                          />
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="font-medium">{formatCurrency(item.amount)}</div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item)}
+                            disabled={items.length === 1}
+                            className="p-1 text-gray-500 hover:text-red-500 disabled:opacity-50"
+                          >
+                            <X className="h-5 w-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="flex justify-between items-start mt-6">
+                  <button
+                    onClick={addItem}
+                    className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Item
+                  </button>
+
+                  <div className="w-80 space-y-2">
+                    <div className="flex justify-between">
+                      <span>Subtotal:</span>
+                      <span>{formatCurrency(calculateSubtotal())}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tax ({formData.tax}%):</span>
+                      <span>{formatCurrency(calculateTaxAmount())}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Shipping Rate:</span>
+                      <span>{formatCurrency(formData.shippingCharge)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Discount ({formData.discount}%):</span>
+                      <span>-{formatCurrency(calculateDiscountAmount())}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                      <span>Total:</span>
+                      <span>{formatCurrency(calculateTotal())}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label htmlFor="notes" className="block mb-2 text-gray-700">
+                  Notes
+                </label>
+                <textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e: any) => updateFormData("notes", e.target.value)}
+                  placeholder="Notes...."
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="xl:w-96 w-full space-y-6">
+            <div className="bg-white rounded-lg shadow-md">
+              <div className="p-4 border-b">
+                <h2 className="text-lg font-semibold text-gray-800">Currency & Settings</h2>
+              </div>
+              <div className="p-4 space-y-4">
+                <div>
+                  <label htmlFor="currency" className="block mb-2 text-gray-700">
+                    Currency
+                  </label>
+                  <select
+                    id="currency"
+                    value={formData.currency}
+                    onChange={(e: any) => updateFormData("currency", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {currencyList.map((currency) => (
+                      <option key={currency} value={currency}>
+                        {currency}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="tax" className="block mb-2 text-gray-700">
+                      Tax (%)
+                    </label>
+                    <input
+                      id="tax"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.tax}
+                      onChange={(e: any) => updateFormData("tax", Number(e.target.value) || 0)}
+                      placeholder="Tax"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="discount" className="block mb-2 text-gray-700">
+                      Discount (%)
+                    </label>
+                    <input
+                      id="discount"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.discount}
+                      onChange={(e: any) => updateFormData("discount", Number(e.target.value) || 0)}
+                      placeholder="Discount"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="shipping-charge" className="block mb-2 text-gray-700">
+                    Shipping Charge
+                  </label>
+                  <input
+                    id="shipping-charge"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.shippingCharge}
+                    onChange={(e: any) => updateFormData("shippingCharge", Number(e.target.value) || 0)}
+                    placeholder="Shipping Charge"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="payment-method" className="block mb-2 text-gray-700">
+                    Accept Payment Via
+                  </label>
+                  <select
+                    id="payment-method"
+                    value={formData.paymentMethod}
+                    onChange={(e: any) => updateFormData("paymentMethod", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Payment</option>
+                    <option value="bank">Bank Account</option>
+                    <option value="paypal">PayPal</option>
+                    <option value="upi">UPI Transfer</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md">
+              <div className="p-4 border-b">
+                <h2 className="text-lg font-semibold text-gray-800">Actions</h2>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-1 gap-3">
+                  <button
+                    onClick={handleSave}
+                    disabled={isLoading}
+                    className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {isLoading ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={handleSend}
+                    disabled={isLoading}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {isLoading ? "Sending..." : "Send Invoice"}
+                  </button>
+                  <button
+                    onClick={handlePreview}
+                    className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center justify-center"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </button>
+                  <button
+                    onClick={handleDownload}
+                    disabled={isLoading}
+                    className="w-full px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {isLoading ? "Generating..." : "Download PDF"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-auto">
+            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
+              <h2 className="text-xl font-semibold">Invoice Preview</h2>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4">
+              <InvoicePreview />
+            </div>
+            <div className="sticky bottom-0 bg-white border-t p-4 flex justify-end gap-3 z-10">
+              <button
+                onClick={handleDownload}
+                disabled={isLoading}
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isLoading ? "Generating..." : "Download PDF"}
+              </button>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden preview for PDF generation */}
+      <div className="fixed -top-[9999px] left-0 opacity-0 pointer-events-none">
+        <InvoicePreview />
+      </div>
+    </>
+  )
+}
+
+export default Add

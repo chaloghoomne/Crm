@@ -9,6 +9,10 @@ import IconSend from '../../components/Icon/IconSend';
 import IconX from '../../components/Icon/IconX';
 import { set } from 'lodash';
 import Swal from 'sweetalert2';
+import * as io from 'react-icons/io5';
+import * as fa from 'react-icons/fa';
+import * as md from 'react-icons/md';
+import { SlCalender } from 'react-icons/sl';
 
 const FollowUp = () => {
     const [leads, setLeads] = useState<Lead[]>([]);
@@ -68,14 +72,26 @@ const FollowUp = () => {
             ...values,
             leadID: selectedLead,
         };
-        console.log(values);
+        // console.log(values);
         try {
             const res = await axios.post(`${import.meta.env.VITE_BASE_URL}api/saveFollowUp`, finalValues);
-            console.log(res);
+            // console.log(res);
             showAlert2(15, res.data.message);
             setFollowUpWindow(false);
-        } catch (err) {
+        } catch (err: any) {
+            showAlert2(16, err.response.data.message);
             console.log(err);
+        }
+    };
+
+    const handleForward = async (leadId: string) => {
+        try {
+            const res = await axios.get(`${import.meta.env.VITE_BASE_URL}api/forwardLead/${leadId} `);
+            // console.log(res.data);
+            showAlert2(15, res.data.message);
+        } catch (err: any) {
+            console.log(err);
+            showAlert2(16, err.response.data.message);
         }
     };
 
@@ -187,6 +203,18 @@ const FollowUp = () => {
                                     </button>
                                 )}
                             </Tab>
+                            <Tab as={Fragment}>
+                                {({ selected }) => (
+                                    <button
+                                        onClick={() => setSelectedTab('Forwarded')}
+                                        className={`${
+                                            selected ? '!border-white-light !border-b-white text-primary !outline-none dark:!border-[#191e3a] dark:!border-b-black' : ''
+                                        } -mb-[1px] block border border-transparent p-3.5 py-2 hover:border-white-light hover:border-b-white dark:hover:border-[#191e3a] dark:hover:border-b-black`}
+                                    >
+                                        Forwarded
+                                    </button>
+                                )}
+                            </Tab>
                         </Tab.List>
                     </div>
 
@@ -197,19 +225,51 @@ const FollowUp = () => {
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th>Title</th>
-                                            <th>Destination</th>
-                                            <th>Agent/Client</th>
-                                            <th>Query Date</th>
-                                            <th>Status</th>
-                                            <th>#</th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    {' '}
+                                                    <fa.FaInfo />
+                                                    Title
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaSearchLocation />
+                                                    Destination{' '}
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaUser />
+                                                    Agent/Client
+                                                </p>
+                                            </th>
+                                            <th>
+                                                {' '}
+                                                <p className="flex items-center gap-1">
+                                                    <SlCalender />
+                                                    Query Date
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaHourglass />
+                                                    Status
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <io.IoOptions />
+                                                    Options
+                                                </p>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {leads.map((lead: Lead) => (
                                             <tr key={lead._id}>
                                                 <td>
-                                                    <p>{lead._id}</p>
+                                                    <p className="text-xs w-16 overflow-auto">{lead._id}</p>
                                                 </td>
                                                 <td>
                                                     <p>{lead.serviceType.toUpperCase()}</p>
@@ -222,7 +282,7 @@ const FollowUp = () => {
                                                 </td>
                                                 <td>
                                                     {lead.serviceType === 'visa' && <p>Visa Name:{lead.visaName}</p>}
-                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.departureDest + ' - ' + lead.arrivalDest}</p>}
+                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.destination}</p>}
                                                     {/* <p>Destination:{lead.departureDest+" - "+lead.arrivalDest || lead.visaName }</p> */}
                                                     <p>Lead Source: {lead.leadSource}</p>
                                                     <p>
@@ -257,27 +317,34 @@ const FollowUp = () => {
                                                 </td>
 
                                                 <td className="flex justify-center flex-col gap-1">
-                                                    <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
-                                                        <IconSend />
-                                                    </button>
-                                                    <button
-                                                        className=" border-2 border-green-500 hover:bg-green-500 hover:text-white rounded-md text-xs"
-                                                        onClick={() => {
-                                                            setFollowUpWindow(true);
-                                                            setSelectedLead(lead._id);
-                                                        }}
-                                                    >
-                                                        Follow Up
-                                                    </button>
-                                                    <button
-                                                        className=" border-2 border-yellow-500 hover:bg-yellow-500 hover:text-white rounded-md text-xs"
-                                                        onClick={() => {
-                                                            setHistoryWindow(true);
-                                                            setHistoryLead(lead._id);
-                                                        }}
-                                                    >
-                                                        History
-                                                    </button>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
+                                                            <IconSend />
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setFollowUpWindow(true);
+                                                                setSelectedLead(lead._id);
+                                                            }}
+                                                        >
+                                                            Follow Up
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button
+                                                            className=" btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setHistoryWindow(true);
+                                                                setHistoryLead(lead._id);
+                                                            }}
+                                                        >
+                                                            History
+                                                        </button>
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleForward(lead._id)}>
+                                                            Forward
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -316,19 +383,51 @@ const FollowUp = () => {
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th>Title</th>
-                                            <th>Destination</th>
-                                            <th>Agent/Client</th>
-                                            <th>Query Date</th>
-                                            <th>Status</th>
-                                            <th>#</th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    {' '}
+                                                    <fa.FaInfo />
+                                                    Title
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaSearchLocation />
+                                                    Destination{' '}
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaUser />
+                                                    Agent/Client
+                                                </p>
+                                            </th>
+                                            <th>
+                                                {' '}
+                                                <p className="flex items-center gap-1">
+                                                    <SlCalender />
+                                                    Query Date
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaHourglass />
+                                                    Status
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <io.IoOptions />
+                                                    Options
+                                                </p>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {leads.map((lead: Lead) => (
                                             <tr key={lead._id}>
                                                 <td>
-                                                    <p>{lead._id}</p>
+                                                    <p className="text-xs w-16 overflow-auto">{lead._id}</p>
                                                 </td>
                                                 <td>
                                                     <p>{lead.serviceType.toUpperCase()}</p>
@@ -341,7 +440,7 @@ const FollowUp = () => {
                                                 </td>
                                                 <td>
                                                     {lead.serviceType === 'visa' && <p>Visa Name:{lead.visaName}</p>}
-                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.departureDest + ' - ' + lead.arrivalDest}</p>}
+                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.destination}</p>}
                                                     <p>Lead Source: {lead.leadSource}</p>
                                                     <p>
                                                         <b>{lead.priority}</b>
@@ -375,18 +474,34 @@ const FollowUp = () => {
                                                 </td>
 
                                                 <td className="flex justify-center flex-col gap-1">
-                                                    <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
-                                                        <IconSend />
-                                                    </button>
-                                                    <button
-                                                        className=" border-2 border-green-500 hover:bg-green-500 hover:text-white rounded-md text-xs"
-                                                        onClick={() => {
-                                                            setFollowUpWindow(true);
-                                                            setSelectedLead(lead._id);
-                                                        }}
-                                                    >
-                                                        Follow Up
-                                                    </button>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
+                                                            <IconSend />
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setFollowUpWindow(true);
+                                                                setSelectedLead(lead._id);
+                                                            }}
+                                                        >
+                                                            Follow Up
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button
+                                                            className=" btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setHistoryWindow(true);
+                                                                setHistoryLead(lead._id);
+                                                            }}
+                                                        >
+                                                            History
+                                                        </button>
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleForward(lead._id)}>
+                                                            Forward
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -425,19 +540,51 @@ const FollowUp = () => {
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th>Title</th>
-                                            <th>Destination</th>
-                                            <th>Agent/Client</th>
-                                            <th>Query Date</th>
-                                            <th>Status</th>
-                                            <th>#</th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    {' '}
+                                                    <fa.FaInfo />
+                                                    Title
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaSearchLocation />
+                                                    Destination{' '}
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaUser />
+                                                    Agent/Client
+                                                </p>
+                                            </th>
+                                            <th>
+                                                {' '}
+                                                <p className="flex items-center gap-1">
+                                                    <SlCalender />
+                                                    Query Date
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaHourglass />
+                                                    Status
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <io.IoOptions />
+                                                    Options
+                                                </p>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {leads.map((lead: Lead) => (
                                             <tr key={lead._id}>
                                                 <td>
-                                                    <p>{lead._id}</p>
+                                                    <p className="text-xs w-16 overflow-auto">{lead._id}</p>
                                                 </td>
                                                 <td>
                                                     <p>{lead.serviceType.toUpperCase()}</p>
@@ -450,7 +597,7 @@ const FollowUp = () => {
                                                 </td>
                                                 <td>
                                                     {lead.serviceType === 'visa' && <p>Visa Name:{lead.visaName}</p>}
-                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.departureDest + ' - ' + lead.arrivalDest}</p>}
+                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.destination}</p>}
                                                     <p>Lead Source: {lead.leadSource}</p>
                                                     <p>
                                                         <b>{lead.priority}</b>
@@ -483,18 +630,34 @@ const FollowUp = () => {
                                                     {lead.status}
                                                 </td>
                                                 <td className="flex justify-center flex-col gap-1">
-                                                    <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
-                                                        <IconSend />
-                                                    </button>
-                                                    <button
-                                                        className=" border-2 border-green-500 hover:bg-green-500 hover:text-white rounded-md text-xs"
-                                                        onClick={() => {
-                                                            setFollowUpWindow(true);
-                                                            setSelectedLead(lead._id);
-                                                        }}
-                                                    >
-                                                        Follow Up
-                                                    </button>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
+                                                            <IconSend />
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setFollowUpWindow(true);
+                                                                setSelectedLead(lead._id);
+                                                            }}
+                                                        >
+                                                            Follow Up
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button
+                                                            className=" btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setHistoryWindow(true);
+                                                                setHistoryLead(lead._id);
+                                                            }}
+                                                        >
+                                                            History
+                                                        </button>
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleForward(lead._id)}>
+                                                            Forward
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -533,19 +696,51 @@ const FollowUp = () => {
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th>Title</th>
-                                            <th>Destination</th>
-                                            <th>Agent/Client</th>
-                                            <th>Query Date</th>
-                                            <th>Status</th>
-                                            <th>#</th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    {' '}
+                                                    <fa.FaInfo />
+                                                    Title
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaSearchLocation />
+                                                    Destination{' '}
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaUser />
+                                                    Agent/Client
+                                                </p>
+                                            </th>
+                                            <th>
+                                                {' '}
+                                                <p className="flex items-center gap-1">
+                                                    <SlCalender />
+                                                    Query Date
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaHourglass />
+                                                    Status
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <io.IoOptions />
+                                                    Options
+                                                </p>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {leads.map((lead: Lead) => (
                                             <tr key={lead._id}>
                                                 <td>
-                                                    <p>{lead._id}</p>
+                                                    <p className="text-xs w-16 overflow-auto">{lead._id}</p>
                                                 </td>
                                                 <td>
                                                     <p>{lead.serviceType.toUpperCase()}</p>
@@ -558,225 +753,7 @@ const FollowUp = () => {
                                                 </td>
                                                 <td>
                                                     {lead.serviceType === 'visa' && <p>Visa Name:{lead.visaName}</p>}
-                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.departureDest + ' - ' + lead.arrivalDest}</p>}
-                                                    <p>Lead Source: {lead.leadSource}</p>
-                                                    <p>
-                                                        <b>{lead.priority}</b>
-                                                    </p>
-                                                </td>
-                                                <td>
-                                                    <p>Agent:{lead.agentName}</p>
-                                                    <p>Name:{lead?.name}</p>
-                                                    <p>Email: {lead?.email}</p>
-                                                    <p>Mobile No. : {lead?.phoneNumber}</p>
-                                                </td>
-                                                <td>
-                                                    <p>Date:{new Date(lead.createdAt).toLocaleDateString()}</p>
-                                                    <p>Added By:{lead.leadBy}</p>
-                                                </td>
-                                                <td
-                                                    className={`px-4 py-2 font-medium rounded
-                                                        ${
-                                                            lead.status === 'Pending'
-                                                                ? 'bg-yellow-100 text-yellow-800'
-                                                                : lead.status === 'InProgress'
-                                                                ? 'bg-blue-100 text-blue-800'
-                                                                : lead.status === 'Complete'
-                                                                ? 'bg-green-100 text-green-800'
-                                                                : lead.status === 'Cancelled'
-                                                                ? 'bg-red-100 text-red-800'
-                                                                : 'bg-gray-100 text-gray-800'
-                                                        }`}
-                                                >
-                                                    {lead.status}
-                                                </td>
-
-                                                <td className="flex justify-center flex-col gap-1">
-                                                    <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
-                                                        <IconSend />
-                                                    </button>
-                                                    <button
-                                                        className=" border-2 border-green-500 hover:bg-green-500 hover:text-white rounded-md text-xs"
-                                                        onClick={() => {
-                                                            setFollowUpWindow(true);
-                                                            setSelectedLead(lead._id);
-                                                        }}
-                                                    >
-                                                        Follow Up
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                <ul className="flex space-x-2 justify-center mt-6 items-center  ">
-                                    <li>
-                                        <button
-                                            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                                            disabled={page === 1}
-                                            type="button"
-                                            className="flex justify-center font-semibold px-3.5 py-2 rounded transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:bg-gray-400"
-                                        >
-                                            Prev
-                                        </button>
-                                    </li>
-                                    <span>
-                                        {page} of {totalPages}
-                                    </span>
-                                    <li>
-                                        <button
-                                            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
-                                            disabled={page === totalPages}
-                                            type="button"
-                                            className="flex justify-center font-semibold px-3.5 py-2 rounded transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:bg-gray-400"
-                                        >
-                                            Next
-                                        </button>
-                                    </li>
-                                </ul>
-                            </div>
-                        </Tab.Panel>
-                        <Tab.Panel>
-                            <div className="table-responsive mb-5">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Title</th>
-                                            <th>Destination</th>
-                                            <th>Agent/Client</th>
-                                            <th>Query Date</th>
-                                            <th>Status</th>
-                                            <th>#</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {leads.map((lead: Lead) => (
-                                            <tr key={lead._id}>
-                                                <td>
-                                                    <p>{lead._id}</p>
-                                                </td>
-                                                <td>
-                                                    <p>{lead.serviceType.toUpperCase()}</p>
-                                                    <p>
-                                                        {new Date(lead?.fromDate || '').toLocaleDateString()} - {new Date(lead?.toDate || '').toLocaleDateString()}
-                                                    </p>
-                                                    <p>
-                                                        Adult:{lead.adult} Infant:{lead.infant} Child:{lead.child}
-                                                    </p>
-                                                </td>
-                                                <td>
-                                                    {lead.serviceType === 'visa' && <p>Visa Name:{lead.visaName}</p>}
-                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.departureDest + ' - ' + lead.arrivalDest}</p>}
-                                                    <p>Lead Source: {lead.leadSource}</p>
-                                                    <p>
-                                                        <b>{lead.priority}</b>
-                                                    </p>
-                                                </td>
-                                                <td>
-                                                    <p>Agent:{lead.agentName}</p>
-                                                    <p>Name:{lead?.name}</p>
-                                                    <p>Email: {lead?.email}</p>
-                                                    <p>Mobile No. : {lead?.phoneNumber}</p>
-                                                </td>
-                                                <td>
-                                                    <p>Date:{new Date(lead.createdAt).toLocaleDateString()}</p>
-                                                    <p>Added By:{lead.leadBy}</p>
-                                                </td>
-                                                <td
-                                                    className={`px-4 py-2 font-medium rounded
-                                                        ${
-                                                            lead.status === 'Pending'
-                                                                ? 'bg-yellow-100 text-yellow-800'
-                                                                : lead.status === 'InProgress'
-                                                                ? 'bg-blue-100 text-blue-800'
-                                                                : lead.status === 'Complete'
-                                                                ? 'bg-green-100 text-green-800'
-                                                                : lead.status === 'Cancelled'
-                                                                ? 'bg-red-100 text-red-800'
-                                                                : 'bg-gray-100 text-gray-800'
-                                                        }`}
-                                                >
-                                                    {lead.status}
-                                                </td>
-
-                                                <td className="flex justify-center flex-col gap-1">
-                                                    <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
-                                                        <IconSend />
-                                                    </button>
-                                                    <button
-                                                        className=" border-2 border-green-500 hover:bg-green-500 hover:text-white rounded-md text-xs"
-                                                        onClick={() => {
-                                                            setFollowUpWindow(true);
-                                                            setSelectedLead(lead._id);
-                                                        }}
-                                                    >
-                                                        Follow Up
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                <ul className="flex space-x-2 justify-center mt-6 items-center  ">
-                                    <li>
-                                        <button
-                                            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                                            disabled={page === 1}
-                                            type="button"
-                                            className="flex justify-center font-semibold px-3.5 py-2 rounded transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:bg-gray-400"
-                                        >
-                                            Prev
-                                        </button>
-                                    </li>
-                                    <span>
-                                        {page} of {totalPages}
-                                    </span>
-                                    <li>
-                                        <button
-                                            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
-                                            disabled={page === totalPages}
-                                            type="button"
-                                            className="flex justify-center font-semibold px-3.5 py-2 rounded transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:bg-gray-400"
-                                        >
-                                            Next
-                                        </button>
-                                    </li>
-                                </ul>
-                            </div>
-                        </Tab.Panel>
-                        <Tab.Panel>
-                            <div className="table-responsive mb-5">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Title</th>
-                                            <th>Destination</th>
-                                            <th>Agent/Client</th>
-                                            <th>Query Date</th>
-                                            <th>Status</th>
-                                            <th>#</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {leads.map((lead: Lead) => (
-                                            <tr key={lead._id}>
-                                                <td>
-                                                    <p>{lead._id}</p>
-                                                </td>
-                                                <td>
-                                                    <p>{lead.serviceType.toUpperCase()}</p>
-                                                    <p>
-                                                        {new Date(lead?.fromDate || '').toLocaleDateString()} - {new Date(lead?.toDate || '').toLocaleDateString()}
-                                                    </p>
-                                                    <p>
-                                                        Adult:{lead.adult} Infant:{lead.infant} Child:{lead.child}
-                                                    </p>
-                                                </td>
-                                                <td>
-                                                    {lead.serviceType === 'visa' && <p>Visa Name:{lead.visaName}</p>}
-                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.departureDest + ' - ' + lead.arrivalDest}</p>}
+                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.destination}</p>}
                                                     <p>Lead Source: {lead.leadSource}</p>
                                                     <p>
                                                         <b>{lead.priority}</b>
@@ -810,18 +787,507 @@ const FollowUp = () => {
                                                 </td>
 
                                                 <td className="flex justify-center flex-col gap-1">
-                                                    <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
-                                                        <IconSend />
-                                                    </button>
-                                                    <button
-                                                        className=" border-2 border-green-500 hover:bg-green-500 hover:text-white rounded-md text-xs"
-                                                        onClick={() => {
-                                                            setFollowUpWindow(true);
-                                                            setSelectedLead(lead._id);
-                                                        }}
-                                                    >
-                                                        Follow Up
-                                                    </button>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
+                                                            <IconSend />
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setFollowUpWindow(true);
+                                                                setSelectedLead(lead._id);
+                                                            }}
+                                                        >
+                                                            Follow Up
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button
+                                                            className=" btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setHistoryWindow(true);
+                                                                setHistoryLead(lead._id);
+                                                            }}
+                                                        >
+                                                            History
+                                                        </button>
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleForward(lead._id)}>
+                                                            Forward
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                <ul className="flex space-x-2 justify-center mt-6 items-center  ">
+                                    <li>
+                                        <button
+                                            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                                            disabled={page === 1}
+                                            type="button"
+                                            className="flex justify-center font-semibold px-3.5 py-2 rounded transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:bg-gray-400"
+                                        >
+                                            Prev
+                                        </button>
+                                    </li>
+                                    <span>
+                                        {page} of {totalPages}
+                                    </span>
+                                    <li>
+                                        <button
+                                            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                                            disabled={page === totalPages}
+                                            type="button"
+                                            className="flex justify-center font-semibold px-3.5 py-2 rounded transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:bg-gray-400"
+                                        >
+                                            Next
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </Tab.Panel>
+                        <Tab.Panel>
+                            <div className="table-responsive mb-5">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    {' '}
+                                                    <fa.FaInfo />
+                                                    Title
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaSearchLocation />
+                                                    Destination{' '}
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaUser />
+                                                    Agent/Client
+                                                </p>
+                                            </th>
+                                            <th>
+                                                {' '}
+                                                <p className="flex items-center gap-1">
+                                                    <SlCalender />
+                                                    Query Date
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaHourglass />
+                                                    Status
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <io.IoOptions />
+                                                    Options
+                                                </p>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {leads.map((lead: Lead) => (
+                                            <tr key={lead._id}>
+                                                <td>
+                                                    <p className="text-xs w-16 overflow-auto">{lead._id}</p>
+                                                </td>
+                                                <td>
+                                                    <p>{lead.serviceType.toUpperCase()}</p>
+                                                    <p>
+                                                        {new Date(lead?.fromDate || '').toLocaleDateString()} - {new Date(lead?.toDate || '').toLocaleDateString()}
+                                                    </p>
+                                                    <p>
+                                                        Adult:{lead.adult} Infant:{lead.infant} Child:{lead.child}
+                                                    </p>
+                                                </td>
+                                                <td>
+                                                    {lead.serviceType === 'visa' && <p>Visa Name:{lead.visaName}</p>}
+                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.destination}</p>}
+                                                    <p>Lead Source: {lead.leadSource}</p>
+                                                    <p>
+                                                        <b>{lead.priority}</b>
+                                                    </p>
+                                                </td>
+                                                <td>
+                                                    <p>Agent:{lead.agentName}</p>
+                                                    <p>Name:{lead?.name}</p>
+                                                    <p>Email: {lead?.email}</p>
+                                                    <p>Mobile No. : {lead?.phoneNumber}</p>
+                                                </td>
+                                                <td>
+                                                    <p>Date:{new Date(lead.createdAt).toLocaleDateString()}</p>
+                                                    <p>Added By:{lead.leadBy}</p>
+                                                </td>
+                                                <td
+                                                    className={`px-4 py-2 font-medium rounded
+                                                        ${
+                                                            lead.status === 'Pending'
+                                                                ? 'bg-yellow-100 text-yellow-800'
+                                                                : lead.status === 'InProgress'
+                                                                ? 'bg-blue-100 text-blue-800'
+                                                                : lead.status === 'Complete'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : lead.status === 'Cancelled'
+                                                                ? 'bg-red-100 text-red-800'
+                                                                : 'bg-gray-100 text-gray-800'
+                                                        }`}
+                                                >
+                                                    {lead.status}
+                                                </td>
+
+                                                <td className="flex justify-center flex-col gap-1">
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
+                                                            <IconSend />
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setFollowUpWindow(true);
+                                                                setSelectedLead(lead._id);
+                                                            }}
+                                                        >
+                                                            Follow Up
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button
+                                                            className=" btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setHistoryWindow(true);
+                                                                setHistoryLead(lead._id);
+                                                            }}
+                                                        >
+                                                            History
+                                                        </button>
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleForward(lead._id)}>
+                                                            Forward
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                <ul className="flex space-x-2 justify-center mt-6 items-center  ">
+                                    <li>
+                                        <button
+                                            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                                            disabled={page === 1}
+                                            type="button"
+                                            className="flex justify-center font-semibold px-3.5 py-2 rounded transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:bg-gray-400"
+                                        >
+                                            Prev
+                                        </button>
+                                    </li>
+                                    <span>
+                                        {page} of {totalPages}
+                                    </span>
+                                    <li>
+                                        <button
+                                            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                                            disabled={page === totalPages}
+                                            type="button"
+                                            className="flex justify-center font-semibold px-3.5 py-2 rounded transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:bg-gray-400"
+                                        >
+                                            Next
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </Tab.Panel>
+                        <Tab.Panel>
+                            <div className="table-responsive mb-5">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    {' '}
+                                                    <fa.FaInfo />
+                                                    Title
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaSearchLocation />
+                                                    Destination{' '}
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaUser />
+                                                    Agent/Client
+                                                </p>
+                                            </th>
+                                            <th>
+                                                {' '}
+                                                <p className="flex items-center gap-1">
+                                                    <SlCalender />
+                                                    Query Date
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaHourglass />
+                                                    Status
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <io.IoOptions />
+                                                    Options
+                                                </p>
+                                            </th>
+
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {leads.map((lead: Lead) => (
+                                            <tr key={lead._id}>
+                                                <td>
+                                                    <p className="text-xs w-16 overflow-auto">{lead._id}</p>
+                                                </td>
+                                                <td>
+                                                    <p>{lead.serviceType.toUpperCase()}</p>
+                                                    <p>
+                                                        {new Date(lead?.fromDate || '').toLocaleDateString()} - {new Date(lead?.toDate || '').toLocaleDateString()}
+                                                    </p>
+                                                    <p>
+                                                        Adult:{lead.adult} Infant:{lead.infant} Child:{lead.child}
+                                                    </p>
+                                                </td>
+                                                <td>
+                                                    {lead.serviceType === 'visa' && <p>Visa Name:{lead.visaName}</p>}
+                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.destination}</p>}
+                                                    <p>Lead Source: {lead.leadSource}</p>
+                                                    <p>
+                                                        <b>{lead.priority}</b>
+                                                    </p>
+                                                </td>
+                                                <td>
+                                                    <p>Agent:{lead.agentName}</p>
+                                                    <p>Name:{lead?.name}</p>
+                                                    <p>Email: {lead?.email}</p>
+                                                    <p>Mobile No. : {lead?.phoneNumber}</p>
+                                                </td>
+                                                <td>
+                                                    <p>Date:{new Date(lead.createdAt).toLocaleDateString()}</p>
+                                                    <p>Added By:{lead.leadBy}</p>
+                                                </td>
+                                                <td
+                                                    className={`px-4 py-2 font-medium rounded
+                                                        ${
+                                                            lead.status === 'Pending'
+                                                                ? 'bg-yellow-100 text-yellow-800'
+                                                                : lead.status === 'InProgress'
+                                                                ? 'bg-blue-100 text-blue-800'
+                                                                : lead.status === 'Complete'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : lead.status === 'Cancelled'
+                                                                ? 'bg-red-100 text-red-800'
+                                                                : 'bg-gray-100 text-gray-800'
+                                                        }`}
+                                                >
+                                                    {lead.status}
+                                                </td>
+
+                                                <td className="flex justify-center flex-col gap-1">
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
+                                                            <IconSend />
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setFollowUpWindow(true);
+                                                                setSelectedLead(lead._id);
+                                                            }}
+                                                        >
+                                                            Follow Up
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button
+                                                            className=" btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setHistoryWindow(true);
+                                                                setHistoryLead(lead._id);
+                                                            }}
+                                                        >
+                                                            History
+                                                        </button>
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleForward(lead._id)}>
+                                                            Forward
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                <ul className="flex space-x-2 justify-center mt-6 items-center  ">
+                                    <li>
+                                        <button
+                                            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                                            disabled={page === 1}
+                                            type="button"
+                                            className="flex justify-center font-semibold px-3.5 py-2 rounded transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:bg-gray-400"
+                                        >
+                                            Prev
+                                        </button>
+                                    </li>
+                                    <span>
+                                        {page} of {totalPages}
+                                    </span>
+                                    <li>
+                                        <button
+                                            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                                            disabled={page === totalPages}
+                                            type="button"
+                                            className="flex justify-center font-semibold px-3.5 py-2 rounded transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:bg-gray-400"
+                                        >
+                                            Next
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </Tab.Panel>
+                        <Tab.Panel>
+                            <div className="table-responsive mb-5">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    {' '}
+                                                    <fa.FaInfo />
+                                                    Title
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaSearchLocation />
+                                                    Destination{' '}
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaUser />
+                                                    Agent/Client
+                                                </p>
+                                            </th>
+                                            <th>
+                                                {' '}
+                                                <p className="flex items-center gap-1">
+                                                    <SlCalender />
+                                                    Query Date
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaHourglass />
+                                                    Status
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <io.IoOptions />
+                                                    Options
+                                                </p>
+                                            </th>
+
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {leads.map((lead: Lead) => (
+                                            <tr key={lead._id}>
+                                                <td>
+                                                    <p className="text-xs w-16 overflow-auto">{lead._id}</p>
+                                                </td>
+                                                <td>
+                                                    <p>{lead.serviceType.toUpperCase()}</p>
+                                                    <p>
+                                                        {new Date(lead?.fromDate || '').toLocaleDateString()} - {new Date(lead?.toDate || '').toLocaleDateString()}
+                                                    </p>
+                                                    <p>
+                                                        Adult:{lead.adult} Infant:{lead.infant} Child:{lead.child}
+                                                    </p>
+                                                </td>
+                                                <td>
+                                                    {lead.serviceType === 'visa' && <p>Visa Name:{lead.visaName}</p>}
+                                                    {lead.serviceType === 'tour' && <p>Destination:{lead.destination}</p>}
+                                                    <p>Lead Source: {lead.leadSource}</p>
+                                                    <p>
+                                                        <b>{lead.priority}</b>
+                                                    </p>
+                                                </td>
+                                                <td>
+                                                    <p>Agent:{lead.agentName}</p>
+                                                    <p>Name:{lead?.name}</p>
+                                                    <p>Email: {lead?.email}</p>
+                                                    <p>Mobile No. : {lead?.phoneNumber}</p>
+                                                </td>
+                                                <td>
+                                                    <p>Date:{new Date(lead.createdAt).toLocaleDateString()}</p>
+                                                    <p>Added By:{lead.leadBy}</p>
+                                                </td>
+                                                <td
+                                                    className={`px-4 py-2 font-medium rounded
+                                                        ${
+                                                            lead.status === 'Pending'
+                                                                ? 'bg-yellow-100 text-yellow-800'
+                                                                : lead.status === 'InProgress'
+                                                                ? 'bg-blue-100 text-blue-800'
+                                                                : lead.status === 'Complete'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : lead.status === 'Cancelled'
+                                                                ? 'bg-red-100 text-red-800'
+                                                                : 'bg-gray-100 text-gray-800'
+                                                        }`}
+                                                >
+                                                    {lead.status}
+                                                </td>
+
+                                                <td className="flex justify-center flex-col gap-1">
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleWhatsapp(lead.phoneNumber)}>
+                                                            <IconSend />
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setFollowUpWindow(true);
+                                                                setSelectedLead(lead._id);
+                                                            }}
+                                                        >
+                                                            Follow Up
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button
+                                                            className=" btn btn-sm btn-outline-primary"
+                                                            onClick={() => {
+                                                                setHistoryWindow(true);
+                                                                setHistoryLead(lead._id);
+                                                            }}
+                                                        >
+                                                            History
+                                                        </button>
+                                                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleForward(lead._id)}>
+                                                            Forward
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -858,7 +1324,7 @@ const FollowUp = () => {
                 </Tab.Group>
                 {followUpWindow && (
                     <div className="fixed top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center">
-                        <div className="bg-white p-4 relative w-[25%]">
+                        <div className="bg-white p-4 relative w-[35%]">
                             <h1>Follow Up Window</h1>
                             <button onClick={() => setFollowUpWindow(false)} className="absolute top-2 right-2 text-red-400">
                                 <IconX />
@@ -866,32 +1332,42 @@ const FollowUp = () => {
                             <form onSubmit={handleFollowUpSubmit} className="space-y-4">
                                 <div>
                                     <label>Remarks</label>
-                                    <textarea name="remarks" id="" placeholder="Enter Follow Up Remarks" className="form-textarea"></textarea>
+                                    <textarea name="remarks" id="" placeholder="Enter Follow Up Remarks" rows={8} className="form-textarea"></textarea>
                                 </div>
-                                <div>
-                                    <label>Next Follow Up Date</label>
-                                    <input type="date" name="nextDate" id="" className="form-input" />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label>Next Follow Up Date</label>
+                                        <input type="date" name="nextDate" id="" className="form-input" />
+                                    </div>
+                                    <div>
+                                        <label>Time</label>
+                                        <input type="text" name="time" id="" className="form-input" placeholder="Enter The Time to call (with AM or PM)" />
+                                    </div>
                                 </div>
-                                <div>
+                                <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <label>Current Status</label>
-                                        <select name="status" id="" className="form-select">
-                                            <option value="Pedning">Pending</option>
+                                        <select name="status" id="" className="form-select" defaultValue={leads.find((lead) => lead._id === selectedLead)?.status}>
+                                            <option value="Pending">Pending</option>
                                             <option value="InProgress">In Progress</option>
                                             <option value="Confirmed">Confirmed</option>
                                             <option value="Complete">Complete</option>
                                             <option value="Cancelled">Cancelled</option>
                                         </select>
                                     </div>
-                                    <div className="flex items-center my-4">
-                                        <input type="checkbox" name="reminder" id="" className="form-checkbox " />
-                                        Set Reminder?
-                                    </div>
                                     <div>
-                                        <button type="submit" className="btn btn-primary w-full">
-                                            Save Follow Up
-                                        </button>
+                                        <label>Final Price</label>
+                                        <input type="number" name="price" id="" className="form-input" />
                                     </div>
+                                </div>
+                                <div className="flex items-center my-4">
+                                    <input type="checkbox" name="reminder" id="" className="form-checkbox " defaultChecked={true} />
+                                    Set Reminder?
+                                </div>
+                                <div>
+                                    <button type="submit" className="btn btn-primary w-full">
+                                        Save Follow Up
+                                    </button>
                                 </div>
                             </form>
                         </div>
@@ -900,8 +1376,10 @@ const FollowUp = () => {
 
                 {historyWindow && (
                     <div className="fixed top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center">
-                        <div className="bg-white p-4 w-[30%] relative">
-                            <button className='absolute top-2 right-2 ' onClick={() => setHistoryWindow(false)}><IconX /></button>
+                        <div className="bg-white p-4     w-[40%] relative">
+                            <button className="absolute top-2 right-2 " onClick={() => setHistoryWindow(false)}>
+                                <IconX />
+                            </button>
                             <table>
                                 <thead>
                                     <tr>
@@ -909,6 +1387,7 @@ const FollowUp = () => {
                                         <th>Status</th>
                                         <th>Remarks</th>
                                         <th>Date</th>
+                                        <th>Next Follow Up Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -918,6 +1397,7 @@ const FollowUp = () => {
                                             <td>{item.status}</td>
                                             <td>{item.remarks}</td>
                                             <td>{new Date(item?.date).toLocaleDateString()}</td>
+                                            <td>{new Date(item?.nextDate).toLocaleDateString()}</td>
                                         </tr>
                                     ))}
                                 </tbody>

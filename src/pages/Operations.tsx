@@ -253,12 +253,12 @@ const Operations = () => {
                             </Tab>
                         </Tab.List>
                     </div>
-                    <div className='flex gap-2 my-3'>
+                    {/* <div className='flex gap-2 my-3'>
                     <button className="btn btn-primary" onClick={() => setSupplierWindow(true)}>
                         Add Supplier
                     </button>
                     <button className="btn btn-primary" onClick={() => setHotelWindow(true)}>Add Hotel</button>
-                    </div>
+                    </div> */}
                     <Tab.Panels>
                         <Tab.Panel>
                             <div className="active">
@@ -625,8 +625,8 @@ const Operations = () => {
                                         <select name="supplierId" id="" className="form-select" onChange={(e) => setSupplierName(e.target.selectedOptions[0].getAttribute('data-name') as string)}>
                                             <option value="#">Select Supplier</option>
                                             {supplierList.map((supplier: Supplier) => (
-                                                <option value={supplier._id} data-name={supplier.name}>
-                                                    {supplier.name + '(' + supplier.serviceType.toUpperCase() + ')'}
+                                                <option key={supplier._id} value={supplier._id} data-name={supplier.company}>
+                                                    {supplier.company + '(' + supplier.serviceType + ')'}
                                                 </option>
                                             ))}
                                         </select>

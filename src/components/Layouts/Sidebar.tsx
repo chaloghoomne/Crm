@@ -228,13 +228,13 @@ const Sidebar = () => {
                                                     <NavLink to="/apps/invoice/list">{t('list')}</NavLink>
                                                 </li>
                                                 <li>
-                                                    <NavLink to="/apps/invoice/preview">{t('preview')}</NavLink>
+                                                    {/* <NavLink to="/apps/invoice/preview">{t('preview')}</NavLink> */}
                                                 </li>
                                                 <li>
                                                     <NavLink to="/apps/invoice/add">{t('add')}</NavLink>
                                                 </li>
                                                 <li>
-                                                    <NavLink to="/apps/invoice/edit">{t('edit')}</NavLink>
+                                                    {/* <NavLink to="/apps/invoice/edit">{t('edit')}</NavLink> */}
                                                 </li>
                                             </ul>
                                         </AnimateHeight>

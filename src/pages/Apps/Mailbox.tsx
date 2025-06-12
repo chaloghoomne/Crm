@@ -36,7 +36,7 @@ import IconTxtFile from "../../components/Icon/IconTxtFile"
 import html2pdf from "html2pdf.js"
 import axios from "axios"
 
-const Mailbox = ({ to,onClose }: { to: string,onClose:()=>void }) => {
+const Mailbox = ({ to }: { to: String}) => {
   const dispatch = useDispatch()
   useEffect(() => {
     dispatch(setPageTitle("Mailbox"))
