@@ -9,6 +9,7 @@ import { useSelector } from "react-redux"
 import IconEdit from "../../../components/Icon/IconEdit"
 import IconTrash from "../../../components/Icon/IconTrash"
 import Swal from "sweetalert2"
+import { Supplier } from "../../../types/types"
 
 // Unified Types
 interface Product {
@@ -53,7 +54,7 @@ interface Company {
   bankName: string
   ifscCode: string
   upi: string
-  imgurl: string
+  imgurl:string
 }
 
 interface InvoiceFormData {
@@ -142,7 +143,7 @@ const formatCurrency = (amount: number, currency: string) => {
   return `${currencySymbol}${amount}`
 }
 
-const InvoiceForm = () => {
+const InvoiceForm = ({ invoiceType }: { invoiceType: string }) => {
   const companyId = useSelector((state: IRootState) => state.auth.company_id)
 
   // State Management
@@ -207,11 +208,11 @@ const InvoiceForm = () => {
   const [showProductPopup, setShowProductPopup] = useState(false)
   const [showBankDetailsEdit, setShowBankDetailsEdit] = useState(false)
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null)
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [selectedClient, setSelectedClient] = useState<Supplier | null>(null)
   const [selectedProductForPopup, setSelectedProductForPopup] = useState<Product | null>(null)
 
   // Data State
-  const [existingClients, setExistingClients] = useState<Client[]>([])
+  const [existingClients, setExistingClients] = useState<Supplier[]>([])
   const [existingProducts, setExistingProducts] = useState<Product[]>([])
   const [clientEditOpen, setClientEditOpen] = useState("")
   const [productEditOpen, setProductEditOpen] = useState("")
@@ -310,9 +311,9 @@ const InvoiceForm = () => {
       const client = existingClients.find((client) => client._id === clientEditOpen)
       if (client) {
         setFilterData({
-          name: client.name || "",
+          name: client.company || "",
           email: client.email || "",
-          phone: client.phone || "",
+          phone: client.phoneNumber || "",
           address: client.address || "",
           gstNumber: client.gstNumber || "",
         })
@@ -364,23 +365,22 @@ const InvoiceForm = () => {
       try {
         // Fetch clients, products, packages, and company details in parallel
         const [clientsRes, productsRes, packagesRes, companyRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_BASE_URL}api/getClients/${companyId}`),
+          axios.get(`${import.meta.env.VITE_BASE_URL}api/getSuppliers/${companyId}`),
           axios.get(`${import.meta.env.VITE_BASE_URL}api/getProducts/${companyId}`),
           axios.get(`${import.meta.env.VITE_BASE_URL2}api/v1/getPackagesCrm`),
           axios.get(`${import.meta.env.VITE_BASE_URL}api/getcompanydetails/${companyId}`),
         ])
 
         // Set clients
+        console.log(clientsRes.data)
         setExistingClients(Array.isArray(clientsRes.data) ? clientsRes.data : [])
-        // console.log(productsRes.data)
+        console.log(productsRes.data)
         // Normalize and combine products from both sources
         const products = Array.isArray(productsRes.data) ? productsRes.data.map(normalizeProduct) : []
         const packages = Array.isArray(packagesRes.data?.data) ? packagesRes.data.data.map(normalizeProduct) : []
         setExistingProducts([...products, ...packages])
 
         // Set company details
-        console.log(companyRes.data)
-
         setCompany(companyRes.data)
       } catch (error) {
         console.error("Failed to fetch data:", error)
@@ -455,31 +455,31 @@ const InvoiceForm = () => {
   }
 
   // Client Management
-  const selectClient = (client: Client) => {
+  const selectClient = (client: Supplier) => {
     setSelectedClient(client)
     setFormData({
       ...formData,
-      receiverName: client.name,
+      receiverName: client.company,
       receiverEmail: client.email,
       receiverAddress: client.address,
-      receiverPhone: client.phone,
+      receiverPhone: client.phoneNumber,
       gstNumber: client.gstNumber || "",
     })
     setShowClientSelector(false)
   }
 
-  const saveClient = async (clientData: Partial<Client>) => {
+  const saveClient = async (clientData: Partial<Supplier>) => {
     try {
       const newClient = {
         ...clientData,
         id: Date.now().toString(),
         companyId,
-        clientType,
+        
       }
 
-      await axios.post(`${import.meta.env.VITE_BASE_URL}api/saveClient/${companyId}`, newClient)
+      await axios.post(`${import.meta.env.VITE_BASE_URL}api/addSupplier`, {finalValues:newClient})
 
-      const savedClient = newClient as Client
+      const savedClient = newClient as Supplier
       setSelectedClient(savedClient)
       setExistingClients([...existingClients, savedClient])
       setShowNewClientForm(false)
@@ -490,10 +490,10 @@ const InvoiceForm = () => {
 
   const addNewClient = () => {
     const newClient = {
-      name: formData.receiverName,
+      company: formData.receiverName,
       email: formData.receiverEmail,
       address: formData.receiverAddress,
-      phone: formData.receiverPhone,
+      phoneNumber: formData.receiverPhone,
       gstNumber: formData.gstNumber,
     }
     saveClient(newClient)
@@ -631,9 +631,9 @@ const InvoiceForm = () => {
 
   // API Functions
   const saveInvoice = async () => {
-    setIsLoading(true)
+    setIsLoading(true)               
     try {
-      const values = { ...formData, items, companyId, clientType }
+      const values = { ...formData, items, companyId,invoiceType,isInvoice:true}
       await axios.post(`${import.meta.env.VITE_BASE_URL}api/createInvoice`, values)
 
       // Reset form
@@ -647,6 +647,7 @@ const InvoiceForm = () => {
         receiverPhone: "",
         notes: "",
         gstNumber: "",
+        
       })
 
       alert("Invoice saved successfully!")
@@ -762,10 +763,12 @@ const InvoiceForm = () => {
                 <span className="font-semibold text-gray-700">Date:</span>
                 <span className="text-gray-900">{formData.invoiceDate}</span>
               </div>
+              {invoiceType === "purchase" && 
               <div className="flex justify-between items-center">
                 <span className="font-semibold text-gray-700">Due Date:</span>
                 <span className="text-gray-900">{formData.dueDate}</span>
               </div>
+}
             </div>
           </div>
         </div>
@@ -893,76 +896,78 @@ const InvoiceForm = () => {
   )
 
   return (
-    <div className="container mx-auto p-4 max-w-7xl">
-      <div className="flex flex-col xl:flex-row gap-6">
+    <div className="container mx-auto p-4 max-w-full">
+      <div className="flex flex-col gap-6">
         {/* Main Invoice Form */}
         <div className="flex-1">
           <div className="bg-white rounded-lg shadow p-6">
             {/* Header Section */}
             <div className="flex flex-col lg:flex-row justify-between items-start gap-6 mb-6">
-              {/* Company Info */}
-            <div className="flex items-start gap-4">
-              <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-200">
-                <img
-                  src={company.imgurl}
-                  alt="Company Logo"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div>
-                <div className="font-semibold text-gray-800 text-lg">
-                  {company.companyName}
-                </div>
-                <div className="text-sm text-gray-500">{company.adminEmail}</div>
-              </div>
-            </div>
-            <div className="w-full lg:w-96 space-y-4">
-              {/* Invoice # and Bank Details */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">Invoice #</label>
-                  <input
-                    type="text"
-                    value={formData.invoiceNumber}
-                    onChange={(e) => updateFormData("invoiceNumber", e.target.value)}
-                    placeholder="#8801"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+  {/* Company Info */}
+              <div className="flex flex-col items-start gap-4">
+                <div className="w-40 h-24 rounded-lg overflow-hidden bg-gray-200">
+                  <img
+                    src={company.imgurl}
+                    alt="Company Logo"
+                    className="h-full w-full object-cover"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 mb-1">Bank Details</label>
-                  <button
-                    onClick={() => setShowBankDetailsEdit(true)}
-                    className="w-full px-3 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 text-sm flex items-center justify-center"
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit Bank Details
-                  </button>
+                  <div className="font-semibold text-gray-800 text-lg">
+                    {company.companyName}
+                  </div>
+                  <div className="text-sm text-gray-500">{company.adminEmail}</div>
                 </div>
               </div>
 
-              {/* Dates */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">Date</label>
-                  <input
-                    type="date"
-                    value={formData.invoiceDate}
-                    onChange={(e) => updateFormData("invoiceDate", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
+              {/* Invoice Form Fields */}
+              <div className="w-full lg:w-96 space-y-4">
+                {/* Invoice # and Bank Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Invoice #</label>
+                    <input
+                      type="text"
+                      value={formData.invoiceNumber}
+                      onChange={(e) => updateFormData("invoiceNumber", e.target.value)}
+                      placeholder="#8801"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Bank Details</label>
+                    <button
+                      onClick={() => setShowBankDetailsEdit(true)}
+                      className="w-full px-3 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 text-sm flex items-center justify-center"
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit Bank Details
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">Due Date</label>
-                  <input
-                    type="date"
-                    value={formData.dueDate}
-                    onChange={(e) => updateFormData("dueDate", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
+
+                {/* Dates */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Date</label>
+                    <input
+                      type="date"
+                      value={formData.invoiceDate}
+                      onChange={(e) => updateFormData("invoiceDate", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Due Date</label>
+                    <input
+                      type="date"
+                      value={formData.dueDate}
+                      onChange={(e) => updateFormData("dueDate", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
             </div>
 
 
@@ -970,38 +975,12 @@ const InvoiceForm = () => {
 
             {/* Client Type Selection */}
             <div className="mb-6">
-              <div className="flex items-center mb-4">
-                <h3 className="text-lg font-medium mr-6">Client Type</h3>
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="client_type"
-                      checked={clientType === "B2B"}
-                      onChange={() => setClientType("B2B")}
-                      className="mr-2"
-                    />
-                    <span>B2B</span>
-                  </label>
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="client_type"
-                      checked={clientType === "B2C"}
-                      onChange={() => setClientType("B2C")}
-                      className="mr-2"
-                    />
-                    <span>B2C</span>
-                  </label>
-                </div>
-              </div>
-
               {/* Client Selection Bar */}
               <div className="bg-gray-50 border rounded-md p-3 mb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <Users className="h-5 w-5 text-gray-500 mr-2" />
-                    <span className="font-medium">{selectedClient ? selectedClient.name : "Select or Add Client"}</span>
+                    <span className="font-medium">{selectedClient ? selectedClient.company : "Select or Add Client"}</span>
                   </div>
                   <div className="flex space-x-2">
                     <button
@@ -1033,9 +1012,9 @@ const InvoiceForm = () => {
                 <div className="bg-blue-50 border border-blue-100 rounded-md p-3 mb-4">
                   <div className="flex justify-between items-start">
                     <div>
-                      <div className="font-medium text-blue-800">{selectedClient.name}</div>
+                      <div className="font-medium text-blue-800">{selectedClient.company}</div>
                       <div className="text-sm text-blue-600">{selectedClient.email}</div>
-                      <div className="text-sm text-blue-600">{selectedClient.phone}</div>
+                      <div className="text-sm text-blue-600">{selectedClient.phoneNumber}</div>
                       {selectedClient.gstNumber && (
                         <div className="text-sm text-blue-600">GST: {selectedClient.gstNumber}</div>
                       )}
@@ -1067,20 +1046,20 @@ const InvoiceForm = () => {
                           className="p-2 hover:bg-gray-50 cursor-pointer rounded border-b last:border-0"
                         >
                           <div className="font-medium" onClick={() => selectClient(client)}>
-                            {client.name}
+                            {client.company}
                           </div>
                           <div className="text-sm text-gray-600 justify-between flex">
                             <div>
                               <p>{client.email}</p>
-                              <p>{client.phone}</p>
+                              <p>{client.phoneNumber}</p>
                               <p>{client.address}</p>
                               {client.gstNumber && <span className="text-gray-500">GST: {client.gstNumber}</span>}
                             </div>
                             <div className="flex flex-col gap-2">
-                              <button onClick={() => setClientEditOpen(client._id)}>
+                              <button onClick={() => setClientEditOpen(client._id || "")}>
                                 <IconEdit />
                               </button>
-                              <button onClick={() => deleteClient(client._id)}>
+                              <button onClick={() => deleteClient(client._id || "")}>
                                 <IconTrash />
                               </button>
                             </div>
@@ -1111,7 +1090,7 @@ const InvoiceForm = () => {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-sm text-gray-600 mb-1">
-                          {clientType === "B2B" ? "Company Name" : "Name"}
+                          Company Name
                         </label>
                         <input
                           type="text"
@@ -1147,7 +1126,7 @@ const InvoiceForm = () => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                         />
                       </div>
-                      {clientType === "B2B" && (
+
                         <div>
                           <label className="block text-sm text-gray-600 mb-1">GST Number</label>
                           <input
@@ -1157,7 +1136,7 @@ const InvoiceForm = () => {
                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                           />
                         </div>
-                      )}
+
                     </div>
                   </div>
                   <div className="p-3 border-t bg-gray-50 flex justify-end space-x-2">
@@ -1554,7 +1533,7 @@ const InvoiceForm = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">
-                    {clientType === "B2B" ? "Company Name" : "Name"}
+                    Company Name
                   </label>
                   <input
                     type="text"
@@ -1590,7 +1569,7 @@ const InvoiceForm = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                   />
                 </div>
-                {clientType === "B2B" && (
+
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">GST Number</label>
                     <input
@@ -1600,7 +1579,7 @@ const InvoiceForm = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                     />
                   </div>
-                )}
+
               </div>
             </div>
             <div className="p-3 border-t bg-gray-50 flex justify-end space-x-2">

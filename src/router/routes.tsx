@@ -6,6 +6,13 @@ import Operations from '../pages/Operations';
 import path from 'path';
 import { elementClosest } from '@fullcalendar/core/internal';
 import AddSupplier from '../pages/AddSupplier';
+import Invoice from '../pages/Apps/Invoice/Invoice';
+import { CreditCard, Receipt } from 'lucide-react';
+import ReceiptNew from '../pages/Apps/Invoice/receipt';
+import ReceiptPurchase from '../pages/Apps/Invoice/receiptPurchase';
+import InvoicePurchase from '../pages/Apps/Invoice/InvoicePurchase';
+import DebitNote from '../pages/Apps/Invoice/debitNote';
+import CreditNote from '../pages/Apps/Invoice/creditNote';
 const Index = lazy(() => import('../pages/Index'));
 const Analytics = lazy(() => import('../pages/Analytics'));
 const Finance = lazy(() => import('../pages/Finance'));
@@ -196,6 +203,32 @@ const routes = [
     {
         path: '/apps/invoice/preview',
         element: <Preview />,
+    },
+    {
+        path: '/apps/invoice/sales/receipt',
+        element: <ReceiptNew />,
+    },
+    {
+        path: '/apps/invoice/purchase/receipt',
+        element: <ReceiptPurchase />,
+    },
+    {
+        path: '/apps/invoice/purchase/invoice',
+        element: <InvoicePurchase />,
+    },
+    {
+        path: '/apps/invoice/purchase/debitNote',
+        element: <DebitNote />,
+    },
+    {
+        path: '/apps/invoice/sales/creditNote',
+        element: <CreditNote />,
+    },
+
+
+    {
+        path: '/apps/invoice/sales/invoice',
+        element: <Invoice />,
     },
     {
         path: '/apps/invoice/add',

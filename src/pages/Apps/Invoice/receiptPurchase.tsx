@@ -10,12 +10,11 @@ import IconEdit from "../../../components/Icon/IconEdit"
 import IconEye from "../../../components/Icon/IconEye"
 import Dropdown from "../../../components/Dropdown"
 import axios from "axios"
-import type { company, Invoice, InvoiceItem } from "../../../types/types"
+import type { company, Invoice, InvoiceItem, Receipt } from "../../../types/types"
 import { FaOptinMonster, FaDownload, FaTimes } from "react-icons/fa"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
-import { Button } from "@headlessui/react"
-import Swal from "sweetalert2"
+import RecordPayment from "../../../components/RecordPayment"
 
 interface Company {
   companyName: string
@@ -28,7 +27,7 @@ interface Company {
 }
 
 
-const List = () => {
+const ReceiptPurchase = () => {
   const dispatch = useDispatch()
   const invoiceRef = useRef<HTMLDivElement>(null)
 
@@ -37,9 +36,9 @@ const List = () => {
   }, [dispatch])
 
   const companyId = useSelector((state: IRootState) => state.auth.company_id)
-  const [items, setItems] = useState<Invoice[]>([])
+  const [items, setItems] = useState<Receipt[]>([])
   const [viewInvoice, setViewInvoice] = useState<string | null>(null)
-  const [viewInvoiceData, setViewInvoiceData] = useState<Invoice | null>(null)
+  const [viewInvoiceData, setViewInvoiceData] = useState<Receipt | null>(null)
   const [loading, setLoading] = useState(true)
   const [downloadingPDF, setDownloadingPDF] = useState(false)
 
@@ -57,84 +56,20 @@ const List = () => {
   const PAGE_SIZES = [10, 20, 30, 50, 100]
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0])
 
+
   const [search, setSearch] = useState("")
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
     columnAccessor: "receiverName",
     direction: "asc",
   })
 
-  const calculateSubtotal = () => {
-  if (!viewInvoiceData?.items) return 0
-  return viewInvoiceData.items.reduce((acc: { sum: number }, item: InvoiceItem) => ({ sum: acc.sum + (item.amount || 0) }), { sum: 0 }).sum
-}
-
-  const calculateTaxAmount = () => {
-    const subtotal = calculateSubtotal()
-    const taxRate = Number.parseFloat(viewInvoiceData?.tax || "0")
-    return (subtotal * taxRate) / 100
-  }
-
-  const calculateDiscountAmount = () => {
-    const subtotal = calculateSubtotal()
-    const discountRate = Number.parseFloat(viewInvoiceData?.discount || "0")
-    return (subtotal * discountRate) / 100
-  }
-
-  const calculateTotal = () => {
-    const subtotal = calculateSubtotal()
-    const taxAmount = calculateTaxAmount()
-    const discountAmount = calculateDiscountAmount()
-    const shippingCharges = Number.parseFloat(viewInvoiceData?.shippingCharges || "0")
-    return subtotal + taxAmount - discountAmount + shippingCharges
-  }
-
-   const showAlert2 = async (type: number, message: string) => {
-          if (type === 15) {
-              const toast = Swal.mixin({
-                  toast: true,
-                  position: 'top-end',
-                  showConfirmButton: false,
-                  timer: 3000,
-              });
-              toast.fire({
-                  icon: 'success',
-                  title: message,
-                  padding: '10px 20px',
-              });
-          }
-          if (type === 16) {
-              const toast = Swal.mixin({
-                  toast: true,
-                  position: 'top-end',
-                  showConfirmButton: false,
-                  timer: 3000,
-              });
-              toast.fire({
-                  icon: 'warning',
-                  title: message,
-                  padding: '10px 20px',
-              });
-          }
-      };
-
-  const convertToInvoice = (id:any)=>{
-    try{
-      const res = axios.get(`${import.meta.env.VITE_BASE_URL}api/convertToInvoice/${id}`);
-      
-      showAlert2(15,"Invoice Created Successfully");
-    }
-    catch(error){
-        console.log(error)
-        showAlert2(16,"Error Creating Invoice");
-    }
-  }
 
   const filterData = (id: string | null) => {
     if (!id) {
       setViewInvoiceData(null)
       return
     }
-    const data = items.find((d: Invoice) => d._id === id)
+    const data = items.find((d: Receipt) => d._id === id)
     setViewInvoiceData(data || null)
   }
 
@@ -162,7 +97,7 @@ const List = () => {
       const imgY = 0
 
       pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio)
-      pdf.save(`invoice-${viewInvoiceData.invoiceNumber}.pdf`)
+      pdf.save(`invoice-${viewInvoiceData.receiptNumber}.pdf`)
     } catch (error) {
       console.error("Error generating PDF:", error)
       alert("Error generating PDF. Please try again.")
@@ -200,14 +135,6 @@ const formatCurrency = (amount: number, currency: string) => {
   return `${currencySymbol}${amount}`
 }
 
-  const getInvoiceTotal = (invoice: Invoice) => {
-    if (!invoice.items || invoice.items.length === 0) return 0
-    const subtotal = invoice.items.reduce((sum, item) => sum + (item.amount || 0), 0)
-    const taxAmount = (subtotal * Number.parseFloat(invoice.tax || "0")) / 100
-    const discountAmount = (subtotal * Number.parseFloat(invoice.discount || "0")) / 100
-    const shippingCharges = Number.parseFloat(invoice.shippingCharges || "0")
-    return subtotal + taxAmount - discountAmount + shippingCharges
-  }
 
   useEffect(()=>{
       const fetchCompanyDetails = async () => {
@@ -228,12 +155,12 @@ const formatCurrency = (amount: number, currency: string) => {
     const fetchInvoice = async () => {
       try {
         setLoading(true)
-        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}api/getQuotation/${companyId}`)
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}api/getAllReceipts/${companyId}/${"purchase"}`)
         console.log(response.data)
         setItems(response.data)
       } catch (error) {
-        console.error("Error fetching Quotations:", error)
-        alert("Error fetching Quotations. Please try again.")
+        console.error("Error fetching invoices:", error)
+        alert("Error fetching invoices. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -250,8 +177,8 @@ const formatCurrency = (amount: number, currency: string) => {
 
   const filteredItems = items.filter(
     (item) =>
-      item.receiverName?.toLowerCase().includes(search.toLowerCase()) ||
-      item.invoiceNumber?.toLowerCase().includes(search.toLowerCase()),
+      item.buyerName?.toLowerCase().includes(search.toLowerCase()) ||
+      item.receiptNumber?.toLowerCase().includes(search.toLowerCase()),
   )
 
   const sortedItems = sortBy(filteredItems, sortStatus.columnAccessor)
@@ -324,7 +251,7 @@ const formatCurrency = (amount: number, currency: string) => {
                       <span className="ml-1">{sortStatus.direction === "asc" ? "↑" : "↓"}</span>
                     )}
                   </th>
-                  <th>Invoice #</th>
+                  <th>Receipt Number</th>
                   <th
                     className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
                     onClick={() =>
@@ -335,13 +262,13 @@ const formatCurrency = (amount: number, currency: string) => {
                       })
                     }
                   >
-                    Due Date
+                    Date
                     {sortStatus.columnAccessor === "dueDate" && (
                       <span className="ml-1">{sortStatus.direction === "asc" ? "↑" : "↓"}</span>
                     )}
                   </th>
                   <th>Amount</th>
-                  <th>Status</th>
+                  <th>Payment Mode</th>
                   <th className="text-center">Action</th>
                 </tr>
               </thead>
@@ -353,18 +280,18 @@ const formatCurrency = (amount: number, currency: string) => {
                     </td>
                   </tr>
                 ) : (
-                  paginatedItems.map((data: Invoice) => (
+                  paginatedItems.map((data: Receipt) => (
                     <tr key={data._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                       <td>
-                        <div className="whitespace-nowrap font-semibold">{data.receiverName}</div>
-                        <div className="text-xs text-gray-500">{data.receiverEmail}</div>
+                        <div className="whitespace-nowrap font-semibold">{data.buyerName}</div>
+                        {/* <div className="text-xs text-gray-500">{data.receiptNumber}</div> */}
                       </td>
                       <td>
-                        <div className="font-mono text-sm">{data.invoiceNumber}</div>
+                        <div className="font-mono text-sm">{data.receiptNumber}</div>
                       </td>
                       <td>
                         <div className="whitespace-nowrap">
-                          {new Date(data.dueDate).toLocaleDateString("en-US", {
+                          {new Date(data.date).toLocaleDateString("en-US", {
                             year: "numeric",
                             month: "short",
                             day: "numeric",
@@ -372,11 +299,13 @@ const formatCurrency = (amount: number, currency: string) => {
                         </div>
                       </td>
                       <td>
-                        <div className="font-semibold">{formatCurrency(getInvoiceTotal(data),viewInvoiceData?.currency || "INR")}</div>
+                        <div className="font-semibold">{formatCurrency(data.amountPaid,data.currency||"INR")}</div>
                       </td>
                       <td>
-                        <button className="btn btn-primary btn-sm" onClick={() => convertToInvoice(data?._id ?? "")}>Convert to Invoice</button>
+                          {data.paymentMode}
+                          
                       </td>
+
                       <td className="text-center">
                         <div className="dropdown">
                           <Dropdown
@@ -474,147 +403,99 @@ const formatCurrency = (amount: number, currency: string) => {
 
           {/* Invoice Content */}
           <div className="overflow-auto max-h-[calc(100vh-120px)]">
-            {viewInvoiceData && (
-              <div
-                ref={invoiceRef}
-                className="bg-white p-8 max-w-4xl mx-auto shadow-lg"
-                style={{ fontFamily: "Arial, sans-serif" }}
-              >
-                {/* Header */}
-                <div className="flex justify-between items-start mb-8">
-                  <div>
-                    <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl mb-4">
-                      {company.companyName?.charAt(0) || "I"}
-                    </div>
-                    <div className="space-y-1">
-                      <div className="font-bold text-xl text-gray-800">{company.companyName}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <h1 className="text-4xl font-bold text-gray-800 mb-4">INVOICE</h1>
-                    <div className="space-y-2 text-gray-700">
-                      <div>
-                        <span className="font-semibold">Invoice #:</span> {viewInvoiceData.invoiceNumber}
-                      </div>
-                      <div>
-                        <span className="font-semibold">Date:</span>{" "}
-                        {new Date(viewInvoiceData.invoiceDate).toLocaleDateString("en-US")}
-                      </div>
-                      <div>
-                        <span className="font-semibold">Due Date:</span>{" "}
-                        {new Date(viewInvoiceData.dueDate).toLocaleDateString("en-US")}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bill To & Payment Details */}
-                <div className="grid grid-cols-2 gap-8 mb-8">
-                  <div>
-                    <h3 className="font-bold text-lg mb-4 text-gray-800">Bill To:</h3>
-                    <div className="space-y-1 text-gray-700">
-                      <div className="font-semibold text-gray-800">{viewInvoiceData.receiverName}</div>
-                      <div>{viewInvoiceData.receiverEmail}</div>
-                      <div>{viewInvoiceData.receiverAddress}</div>
-                      <div>{viewInvoiceData.receiverPhone}</div>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg mb-4 text-gray-800">Payment Details:</h3>
-                    <div className="space-y-1 text-gray-700">
-                      <div>
-                        <span className="font-semibold">Bank:</span> {company.bankName}
-                      </div>
-                      <div>
-                        <span className="font-semibold">Account:</span> {company.accountNumber}
-                      </div>
-                      <div>
-                        <span className="font-semibold">IFSC:</span> {company.ifscCode}
-                      </div>
-                      <div>
-                        <span className="font-semibold">UPI:</span> {company.upi}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Items Table */}
-                <div className="mb-8">
-                  <table className="w-full border-collapse border border-gray-300">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="border border-gray-300 p-3 text-left font-semibold">Item</th>
-              <th className="border border-gray-300 p-3 text-center font-semibold w-20">Qty</th>
-              <th className="border border-gray-300 p-3 text-right font-semibold w-24">Rate</th>
-              <th className="border border-gray-300 p-3 text-right font-semibold w-24">Tax (%)</th>
-              <th className="border border-gray-300 p-3 text-right font-semibold w-24">Discount (%)</th>
-              <th className="border border-gray-300 p-3 text-right font-semibold w-24">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {viewInvoiceData.items?.map((item: InvoiceItem, index: number) => (
-                        <tr key={item.id}>
-                <td className="border border-gray-300 p-3">
-                  <div className="font-semibold text-gray-800">{item.title}</div>
-                  <div className="text-sm text-gray-600">{item.description}</div>
-                </td>
-                <td className="border border-gray-300 p-3 text-center">{item.quantity}</td>
-                <td className="border border-gray-300 p-3 text-right">
-                  {formatCurrency(item.rate, viewInvoiceData.currency)}
-                </td>
-                <td className="border border-gray-300 p-3 text-right">{item.tax}%</td>
-                <td className="border border-gray-300 p-3 text-right">{item.discount}%</td>
-                <td className="border border-gray-300 p-3 text-right font-semibold">
-                  {formatCurrency(item.amount, viewInvoiceData.currency)}
-                </td>
-              </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Totals */}
-                <div className="flex justify-end mb-8">
-                  <div className="w-80">
-                    <div className="space-y-2 text-gray-700">
-                      <div className="flex justify-between py-1">
-                        <span>Subtotal:</span>
-                        <span>{formatCurrency(calculateSubtotal(),viewInvoiceData.currency)}</span>
-                      </div>
-                      <div className="flex justify-between py-1">
-                        <span>Tax ({viewInvoiceData.tax || 0}%):</span>
-                        <span>{formatCurrency(calculateTaxAmount(),viewInvoiceData.currency)}</span>
-                      </div>
-                      <div className="flex justify-between py-1">
-                        <span>Shipping:</span>
-                        <span>{formatCurrency(Number.parseFloat(viewInvoiceData.shippingCharges || "0"),viewInvoiceData.currency)}</span>
-                      </div>
-                      <div className="flex justify-between py-1">
-                        <span>Discount ({viewInvoiceData.discount || 0}%):</span>
-                        <span>-{formatCurrency(calculateDiscountAmount(),viewInvoiceData.currency)}</span>
-                      </div>
-                      <div className="flex justify-between font-bold text-lg border-t border-gray-300 pt-2 mt-2">
-                        <span>Total:</span>
-                        <span>{formatCurrency(calculateTotal(),viewInvoiceData.currency)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Notes */}
-                {viewInvoiceData.notes && (
-                  <div className="border-t border-gray-300 pt-6">
-                    <h3 className="font-bold text-lg mb-2 text-gray-800">Notes:</h3>
-                    <p className="text-gray-700 whitespace-pre-wrap">{viewInvoiceData.notes}</p>
-                  </div>
-                )}
-              </div>
-            )}
+  {viewInvoiceData && (
+    <div
+      ref={invoiceRef}
+      className="bg-white p-8 max-w-2xl mx-auto shadow-lg"
+      style={{ fontFamily: "Arial, sans-serif" }}
+    >
+      {/* Header */}
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <div className="w-12 h-12 bg-blue-600 rounded flex items-center justify-center text-white text-2xl font-bold mb-2">
+            {company.companyName?.charAt(0) || "R"}
           </div>
+          <h2 className="font-bold text-xl text-gray-800">{company.companyName}</h2>
+        </div>
+        <div className="text-right text-gray-700 space-y-1">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">RECEIPT</h1>
+          <div><span className="font-semibold">Receipt #:</span> {viewInvoiceData.receiptNumber}</div>
+          <div><span className="font-semibold">Address:</span> {company.address}</div>
+          <h2 className="font-semibold">{company.adminEmail}</h2>
+          <div><span className="font-semibold">Date:</span> {new Date(viewInvoiceData.date).toLocaleDateString("en-IN")}</div>
+        </div>
+      </div>
+
+      {/* Biller + Payment Info */}
+      <div className="grid grid-cols-1 gap-6 mb-6">
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-1">Receipt Number</h3>
+          <p className="text-gray-700">{viewInvoiceData.receiptNumber}</p>
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-1">Date</h3>
+          <p className="text-gray-700">{new Date(viewInvoiceData.date).toLocaleDateString()}</p>
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-1">Payment To:</h3>
+          <p className="text-gray-700">{viewInvoiceData.buyerName}</p>
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-1">Payment Mode</h3>
+          <p className="text-gray-700">{viewInvoiceData.paymentMode}</p>
+        </div>
+      </div>
+
+      {/* Amount Summary */}
+      <div className="mb-6 border border-gray-200 rounded overflow-hidden">
+  <table className="w-full text-sm">
+    <thead className="bg-gray-100 text-gray-700">
+      <tr>
+        <th className="text-left px-4 py-2 font-semibold">Description</th>
+        <th className="text-right px-4 py-2 font-semibold">Invoice Total</th>
+        <th className="text-right px-4 py-2 font-semibold">Paid Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr className="border-t">
+        <td className="px-4 py-3 text-gray-800">Paid Against Invoice</td>
+        <td className="px-4 py-3 text-right text-gray-800 font-medium">
+          {formatCurrency(viewInvoiceData.total, viewInvoiceData.currency || "INR")}
+        </td>
+        <td className="px-4 py-3 text-right text-gray-900 font-semibold">
+          {formatCurrency(viewInvoiceData.amountPaid, viewInvoiceData.currency || "INR")}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+      {/* Payment Details */}
+      <div className="grid grid-cols-2 gap-6 mb-4">
+        <div>
+          <p><span className="font-semibold">Pending Payment:</span> {viewInvoiceData.total-viewInvoiceData.amountPaid}</p>
+        </div>
+        <div>
+          <p><span className="font-semibold">Paid Amount:</span> ₹{viewInvoiceData.amountPaid || "0.00"}</p>
+        </div>
+      </div>
+
+      {/* Notes */}
+      {viewInvoiceData.note && (
+        <div className="mt-4 border-t pt-4">
+          <h4 className="font-semibold mb-1 text-gray-800">Remarks</h4>
+          <p className="text-gray-700">{viewInvoiceData.note}</p>
+        </div>
+      )}
+    </div>
+  )}
+</div>
+
         </div>
       )}
     </div>
   )
 }
 
-export default List
+export default ReceiptPurchase;

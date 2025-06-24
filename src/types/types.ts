@@ -23,22 +23,24 @@ interface emp {
     phoneNumber: string;
     hotelType: string;
   }
+
   
   interface company {
-    companyName: string;
-    address: string;
-    accountNumber:string;
-    ifscCode:string;
-    upi:string;
-    bankName:string;
-    adminEmail: string;
+    companyName?: string;
+    address?: string;
+    accountNumber?:string;
+    ifscCode?:string;
+    upi?:string;
+    bankName?:string;
+    adminEmail?: string;
     subscription?: {
       plan: string;
       status: string;
       expiresAt: string;
     };
-    emailAccounts: EmailAccount[];
-    password: string;
+    emailAccounts?: EmailAccount[];
+    password?: string;
+    imgurl?:string;
     _id?: string;
   }
   
@@ -154,20 +156,45 @@ interface emp {
 
   interface Supplier{
     _id?:string;
-    company:string;
-    email:string;
-    mobile:string;
-    serviceType:string;
+     company: string;
+  ownerName: string;
+  email: string;
+  phoneNumber: string;
+  gstNumber: string;
+  serviceType: string[];  // Array of strings
+  city: string;
+  address: string;
+  bankName: string;
+  accountNumber: string;
+  ifscCode: string;
+  upi: string;
+  description: string;
   }
 
   interface InvoiceItem{
-    id: number;
-    title: string;
-    description: string;
-    quantity: number;
-    rate: number;
-    amount: number;
-  }0.
+    id: number
+  title: string
+  description: string
+  quantity: number
+  discount:number
+  rate: number
+  priceAfterTax:number
+  amount: number
+  tax: number
+  }
+
+  interface Receipt{
+    _id?:string
+    receiptNumber:string
+    date:Date
+    amountPaid:number
+    total:number
+    currency:string
+    paymentMode:number
+    buyerName:string
+    account:string
+    note:string
+  }
 
   interface Invoice{
     
@@ -181,6 +208,7 @@ receiverEmail:string;
 receiverPhone:string;
 receiverAddress:string;
 accountNumber:string;
+totalAmount:number;
 ifscCode:string;
 upiId:string;
 bankName:string;
@@ -192,6 +220,7 @@ shippingCharges:string;
 paymentMethod:string;
 notes:string;
 status:string;
+amountPaid:number;
 items:InvoiceItem[];
 
   }
@@ -211,6 +240,7 @@ items:InvoiceItem[];
     Hotel,
     Invoice,
     InvoiceItem,
+    Receipt
   };
 
 

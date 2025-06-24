@@ -14,8 +14,7 @@ import type { company, Invoice, InvoiceItem } from "../../../types/types"
 import { FaOptinMonster, FaDownload, FaTimes } from "react-icons/fa"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
-import { Button } from "@headlessui/react"
-import Swal from "sweetalert2"
+import RecordPayment from "../../../components/RecordPayment"
 
 interface Company {
   companyName: string
@@ -28,7 +27,7 @@ interface Company {
 }
 
 
-const List = () => {
+const Invoice = () => {
   const dispatch = useDispatch()
   const invoiceRef = useRef<HTMLDivElement>(null)
 
@@ -56,6 +55,7 @@ const List = () => {
   const [page, setPage] = useState(1)
   const PAGE_SIZES = [10, 20, 30, 50, 100]
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0])
+  const [recordPayment, setRecordPayment] = useState("")
 
   const [search, setSearch] = useState("")
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
@@ -88,44 +88,14 @@ const List = () => {
     return subtotal + taxAmount - discountAmount + shippingCharges
   }
 
-   const showAlert2 = async (type: number, message: string) => {
-          if (type === 15) {
-              const toast = Swal.mixin({
-                  toast: true,
-                  position: 'top-end',
-                  showConfirmButton: false,
-                  timer: 3000,
-              });
-              toast.fire({
-                  icon: 'success',
-                  title: message,
-                  padding: '10px 20px',
-              });
-          }
-          if (type === 16) {
-              const toast = Swal.mixin({
-                  toast: true,
-                  position: 'top-end',
-                  showConfirmButton: false,
-                  timer: 3000,
-              });
-              toast.fire({
-                  icon: 'warning',
-                  title: message,
-                  padding: '10px 20px',
-              });
-          }
-      };
-
-  const convertToInvoice = (id:any)=>{
+  const handleStatusChange = async(id:any,status:string)=>{
     try{
-      const res = axios.get(`${import.meta.env.VITE_BASE_URL}api/convertToInvoice/${id}`);
-      
-      showAlert2(15,"Invoice Created Successfully");
+      const res = await axios.put(`${import.meta.env.VITE_BASE_URL}api/updateInvoiceStatus/${id}`,{status});
+      console.log(res.data);
+      window.location.reload();   
     }
     catch(error){
         console.log(error)
-        showAlert2(16,"Error Creating Invoice");
     }
   }
 
@@ -205,8 +175,8 @@ const formatCurrency = (amount: number, currency: string) => {
     const subtotal = invoice.items.reduce((sum, item) => sum + (item.amount || 0), 0)
     const taxAmount = (subtotal * Number.parseFloat(invoice.tax || "0")) / 100
     const discountAmount = (subtotal * Number.parseFloat(invoice.discount || "0")) / 100
-    const shippingCharges = Number.parseFloat(invoice.shippingCharges || "0")
-    return subtotal + taxAmount - discountAmount + shippingCharges
+    // const shippingCharges = Number.parseFloat(invoice.shippingCharges || "0")
+    return subtotal + taxAmount - discountAmount 
   }
 
   useEffect(()=>{
@@ -228,12 +198,12 @@ const formatCurrency = (amount: number, currency: string) => {
     const fetchInvoice = async () => {
       try {
         setLoading(true)
-        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}api/getQuotation/${companyId}`)
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}api/getInvoice/${companyId}/${"sales"}`)
         console.log(response.data)
         setItems(response.data)
       } catch (error) {
-        console.error("Error fetching Quotations:", error)
-        alert("Error fetching Quotations. Please try again.")
+        console.error("Error fetching invoices:", error)
+        alert("Error fetching invoices. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -342,6 +312,7 @@ const formatCurrency = (amount: number, currency: string) => {
                   </th>
                   <th>Amount</th>
                   <th>Status</th>
+                  <th>#</th>
                   <th className="text-center">Action</th>
                 </tr>
               </thead>
@@ -375,7 +346,28 @@ const formatCurrency = (amount: number, currency: string) => {
                         <div className="font-semibold">{formatCurrency(getInvoiceTotal(data),viewInvoiceData?.currency || "INR")}</div>
                       </td>
                       <td>
-                        <button className="btn btn-primary btn-sm" onClick={() => convertToInvoice(data?._id ?? "")}>Convert to Invoice</button>
+                        <p className="flex flex-col">
+                          {/* {data.status} */}
+                          <select name="status" id="" value={data.status} onChange={(e:any) => handleStatusChange( data._id,e.target.value)} className={`badge whitespace-nowrap ${
+                            data.status === "completed" || data.status === "paid"
+                              ? "bg-success"
+                              : data.status === "unpaid" || data.status === "unpaid"
+                                ? "bg-warning"
+
+                                : data.status === "cancelled" || data.status === "Canceled"
+                                  ? "bg-danger"
+                                  : "bg-primary"
+                          }`}>
+                            <option value="pending">Unpaid</option>
+                            <option value="partially paid">Partially Paid</option>
+                            <option value="paid">Paid</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                          Paid:{formatCurrency(data.amountPaid,data.currency)}
+                        </p>
+                      </td>
+                      <td>
+                          <button className="btn-primary btn-sm" onClick={() => setRecordPayment(data?._id ?? "")}>Record Payment</button>
                       </td>
                       <td className="text-center">
                         <div className="dropdown">
@@ -420,6 +412,9 @@ const formatCurrency = (amount: number, currency: string) => {
               </tbody>
             </table>
           </div>
+          {
+            recordPayment && <RecordPayment id={recordPayment} invoiceType="sales" onClose={() => setRecordPayment("")} />
+          }
 
           {/* Pagination */}
           {filteredItems.length > pageSize && (
@@ -617,4 +612,4 @@ const formatCurrency = (amount: number, currency: string) => {
   )
 }
 
-export default List
+export default Invoice;

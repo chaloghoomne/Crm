@@ -14,21 +14,11 @@ import type { company, Invoice, InvoiceItem } from "../../../types/types"
 import { FaOptinMonster, FaDownload, FaTimes } from "react-icons/fa"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
-import { Button } from "@headlessui/react"
-import Swal from "sweetalert2"
-
-interface Company {
-  companyName: string
-  address: string
-  adminEmail: string
-  accountNumber: string
-  bankName: string
-  ifscCode: string
-  upi: string
-}
+import RecordPayment from "../../../components/RecordPayment"
+import PurchaseOrderForm from "./PurchaseAdd"
 
 
-const List = () => {
+const CreditNote = () => {
   const dispatch = useDispatch()
   const invoiceRef = useRef<HTMLDivElement>(null)
 
@@ -43,7 +33,7 @@ const List = () => {
   const [loading, setLoading] = useState(true)
   const [downloadingPDF, setDownloadingPDF] = useState(false)
 
-  const [company, setCompany] = useState<Company>({
+  const [company, setCompany] = useState<company>({
       companyName: "Chalogoomne.com",
       address: "123 Business Street, City, State 12345",
       adminEmail: "b2b@chaloghoomne.com",
@@ -51,11 +41,13 @@ const List = () => {
       bankName: "",
       ifscCode: "",
       upi: "",
+      imgurl:"",
     })
 
   const [page, setPage] = useState(1)
   const PAGE_SIZES = [10, 20, 30, 50, 100]
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0])
+  const [recordPayment, setRecordPayment] = useState("")
 
   const [search, setSearch] = useState("")
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
@@ -88,44 +80,14 @@ const List = () => {
     return subtotal + taxAmount - discountAmount + shippingCharges
   }
 
-   const showAlert2 = async (type: number, message: string) => {
-          if (type === 15) {
-              const toast = Swal.mixin({
-                  toast: true,
-                  position: 'top-end',
-                  showConfirmButton: false,
-                  timer: 3000,
-              });
-              toast.fire({
-                  icon: 'success',
-                  title: message,
-                  padding: '10px 20px',
-              });
-          }
-          if (type === 16) {
-              const toast = Swal.mixin({
-                  toast: true,
-                  position: 'top-end',
-                  showConfirmButton: false,
-                  timer: 3000,
-              });
-              toast.fire({
-                  icon: 'warning',
-                  title: message,
-                  padding: '10px 20px',
-              });
-          }
-      };
-
-  const convertToInvoice = (id:any)=>{
+  const handleStatusChange = async(id:any,status:string)=>{
     try{
-      const res = axios.get(`${import.meta.env.VITE_BASE_URL}api/convertToInvoice/${id}`);
-      
-      showAlert2(15,"Invoice Created Successfully");
+      const res = await axios.put(`${import.meta.env.VITE_BASE_URL}api/updateInvoiceStatus/${id}`,{status});
+      console.log(res.data);
+      window.location.reload();   
     }
     catch(error){
         console.log(error)
-        showAlert2(16,"Error Creating Invoice");
     }
   }
 
@@ -205,8 +167,8 @@ const formatCurrency = (amount: number, currency: string) => {
     const subtotal = invoice.items.reduce((sum, item) => sum + (item.amount || 0), 0)
     const taxAmount = (subtotal * Number.parseFloat(invoice.tax || "0")) / 100
     const discountAmount = (subtotal * Number.parseFloat(invoice.discount || "0")) / 100
-    const shippingCharges = Number.parseFloat(invoice.shippingCharges || "0")
-    return subtotal + taxAmount - discountAmount + shippingCharges
+    // const shippingCharges = Number.parseFloat(invoice.shippingCharges || "0")
+    return subtotal + taxAmount - discountAmount 
   }
 
   useEffect(()=>{
@@ -224,16 +186,18 @@ const formatCurrency = (amount: number, currency: string) => {
     filterData(viewInvoice)
   }, [viewInvoice, items])
 
+  const [purchase,setPurchase] = useState(false);
+
   useEffect(() => {
     const fetchInvoice = async () => {
       try {
         setLoading(true)
-        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}api/getQuotation/${companyId}`)
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}api/getInvoice/${companyId}/${"credit"}`)
         console.log(response.data)
         setItems(response.data)
       } catch (error) {
-        console.error("Error fetching Quotations:", error)
-        alert("Error fetching Quotations. Please try again.")
+        console.error("Error fetching invoices:", error)
+        alert("Error fetching invoices. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -274,6 +238,26 @@ const formatCurrency = (amount: number, currency: string) => {
 
   return (
     <div className="panel px-0 border-white-light dark:border-[#1b2e4b] h-screen">
+      {
+        purchase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-blue-50 bg-opacity-70 p-4">
+  {/* Modal Content */}
+  <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-xl p-6">
+    {/* Close Button */}
+    <button
+      className="absolute top-3 right-3 text-gray-500 hover:text-red-600 transition"
+      onClick={() => setPurchase(false)}
+      aria-label="Close"
+    >
+      ✕
+    </button>
+
+    {/* Form Component */}
+    <PurchaseOrderForm invoiceType="credit" />
+  </div>
+</div>
+ )
+      }
       {!viewInvoice ? (
         <>
           {/* Search and Controls */}
@@ -286,6 +270,11 @@ const formatCurrency = (amount: number, currency: string) => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+            </div>
+            <div>
+              <button className="btn-primary  btn" onClick={()=>setPurchase(true)}>
+                Add Invoice
+              </button>
             </div>
             <div className="flex items-center gap-2">
               <select
@@ -319,12 +308,12 @@ const formatCurrency = (amount: number, currency: string) => {
                       })
                     }
                   >
-                    Name
+                    Credit Note For
                     {sortStatus.columnAccessor === "receiverName" && (
                       <span className="ml-1">{sortStatus.direction === "asc" ? "↑" : "↓"}</span>
                     )}
                   </th>
-                  <th>Invoice #</th>
+                  <th>Credit Note #</th>
                   <th
                     className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
                     onClick={() =>
@@ -335,13 +324,13 @@ const formatCurrency = (amount: number, currency: string) => {
                       })
                     }
                   >
-                    Due Date
+                    Credit Note Date
                     {sortStatus.columnAccessor === "dueDate" && (
                       <span className="ml-1">{sortStatus.direction === "asc" ? "↑" : "↓"}</span>
                     )}
                   </th>
                   <th>Amount</th>
-                  <th>Status</th>
+
                   <th className="text-center">Action</th>
                 </tr>
               </thead>
@@ -374,9 +363,7 @@ const formatCurrency = (amount: number, currency: string) => {
                       <td>
                         <div className="font-semibold">{formatCurrency(getInvoiceTotal(data),viewInvoiceData?.currency || "INR")}</div>
                       </td>
-                      <td>
-                        <button className="btn btn-primary btn-sm" onClick={() => convertToInvoice(data?._id ?? "")}>Convert to Invoice</button>
-                      </td>
+                     
                       <td className="text-center">
                         <div className="dropdown">
                           <Dropdown
@@ -420,6 +407,9 @@ const formatCurrency = (amount: number, currency: string) => {
               </tbody>
             </table>
           </div>
+          {
+            recordPayment && <RecordPayment id={recordPayment} invoiceType="purchase" onClose={() => setRecordPayment("")} />
+          }
 
           {/* Pagination */}
           {filteredItems.length > pageSize && (
@@ -455,10 +445,10 @@ const formatCurrency = (amount: number, currency: string) => {
         <div className="relative">
           {/* Header with controls */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 dark:bg-gray-800">
-            <h2 className="text-lg font-semibold">Invoice Preview</h2>
+            <h2 className="text-lg font-semibold">Credit Note Preview</h2>
             <div className="flex items-center gap-2">
               <button
-                onClick={downloadPDF}
+                onClick={downloadPDF}   
                 disabled={downloadingPDF}
                 className="btn btn-primary btn-sm flex items-center gap-2"
               >
@@ -483,26 +473,23 @@ const formatCurrency = (amount: number, currency: string) => {
                 {/* Header */}
                 <div className="flex justify-between items-start mb-8">
                   <div>
-                    <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl mb-4">
-                      {company.companyName?.charAt(0) || "I"}
+                    <div className="w-36 h-32 bg-blue-600 rounded-lg flex items-center justify-center ">
+                      <img src={company.imgurl} alt="" className="h-full w-full" />
                     </div>
                     <div className="space-y-1">
                       <div className="font-bold text-xl text-gray-800">{company.companyName}</div>
+                      <div className=" text-gray-800">{company.adminEmail}</div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <h1 className="text-4xl font-bold text-gray-800 mb-4">INVOICE</h1>
+                    <h1 className="text-4xl font-bold text-gray-800 mb-4">CREDIT NOTE</h1>
                     <div className="space-y-2 text-gray-700">
                       <div>
-                        <span className="font-semibold">Invoice #:</span> {viewInvoiceData.invoiceNumber}
+                        <span className="font-semibold">Credit Note #:</span> {viewInvoiceData.invoiceNumber}
                       </div>
                       <div>
                         <span className="font-semibold">Date:</span>{" "}
                         {new Date(viewInvoiceData.invoiceDate).toLocaleDateString("en-US")}
-                      </div>
-                      <div>
-                        <span className="font-semibold">Due Date:</span>{" "}
-                        {new Date(viewInvoiceData.dueDate).toLocaleDateString("en-US")}
                       </div>
                     </div>
                   </div>
@@ -617,4 +604,4 @@ const formatCurrency = (amount: number, currency: string) => {
   )
 }
 
-export default List
+export default CreditNote;

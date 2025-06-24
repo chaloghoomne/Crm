@@ -36,6 +36,8 @@ const Sidebar = () => {
     const [currentMenu, setCurrentMenu] = useState<string>('');
     const [role,setRole] = useState('');
     const [errorSubMenu, setErrorSubMenu] = useState(false);
+    const [sales,setSales] = useState(false);
+    const [purchase,setPurchase] = useState(false);
     const themeConfig = useSelector((state: IRootState) => state.themeConfig);
     const semidark = useSelector((state: IRootState) => state.themeConfig.semidark);
     const location = useLocation();
@@ -111,8 +113,7 @@ const Sidebar = () => {
                             <li className="menu nav-item">
                                 <button type="button" className={`${currentMenu === 'dashboard' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('dashboard')}>
                                     <div className="flex items-center">
-                                        <IconMenuDashboard
-                                         className="group-hover:!text-primary shrink-0" />
+                                        <IconMenuDashboard className="group-hover:!text-primary shrink-0" />
                                         <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('dashboard')}</span>
                                     </div>
 
@@ -216,7 +217,6 @@ const Sidebar = () => {
                                                 <IconMenuInvoice className="group-hover:!text-primary shrink-0" />
                                                 <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('invoice')}</span>
                                             </div>
-
                                             <div className={currentMenu !== 'invoice' ? 'rtl:rotate-90 -rotate-90' : ''}>
                                                 <IconCaretDown />
                                             </div>
@@ -225,17 +225,74 @@ const Sidebar = () => {
                                         <AnimateHeight duration={300} height={currentMenu === 'invoice' ? 'auto' : 0}>
                                             <ul className="sub-menu text-gray-500">
                                                 <li>
+                                                    <NavLink to="/apps/invoice/add">{t('quotation')}</NavLink>
+                                                </li>
+                                                <li>
                                                     <NavLink to="/apps/invoice/list">{t('list')}</NavLink>
                                                 </li>
-                                                <li>
-                                                    {/* <NavLink to="/apps/invoice/preview">{t('preview')}</NavLink> */}
+
+                                                {/* Nested submenu START */}
+                                                <li className="menu nav-item">
+                                                    <div>
+                                                    <button
+                                                        type="button"
+                                                        className={`${
+                                                            sales ? 'open' : ''
+                                                        } w-full before:bg-gray-300 before:w-[5px] before:h-[5px] before:rounded ltr:before:mr-2 rtl:before:ml-2 dark:text-[#888ea8] hover:bg-gray-100 dark:hover:bg-gray-900`}
+                                                        onClick={() => setSales(!sales)}
+                                                    >
+                                                        {t('sales')}
+                                                        <div className={`${sales ? 'rtl:rotate-90 -rotate-90' : ''} ltr:ml-auto rtl:mr-auto`}>
+                                                            <IconCaretsDown fill={true} className="w-4 h-4" />
+                                                        </div>
+                                                    </button>
+                                                    </div>
+
+                                                    <AnimateHeight duration={300} height={sales ? 'auto' : 0}>
+                                                        <ul className="sub-menu text-gray-500">
+                                                            <li>
+                                                                <NavLink to="/apps/invoice/sales/invoice">{t('Invoices')}</NavLink>
+                                                            </li>
+                                                            <li>
+                                                                <NavLink to="/apps/invoice/sales/receipt">{t('Payment Receipt')}</NavLink>
+                                                            </li>
+                                                            <li>
+                                                                <NavLink to="/apps/invoice/sales/creditNote">{t('Credit Note')}</NavLink>
+                                                            </li>
+                                                        </ul>
+                                                    </AnimateHeight>
                                                 </li>
-                                                <li>
-                                                    <NavLink to="/apps/invoice/add">{t('add')}</NavLink>
+                                                <li className="menu nav-item">
+                                                    <div>
+                                                    <button
+                                                        type="button"
+                                                        className={`${
+                                                            purchase ? 'open' : ''
+                                                        } w-full before:bg-gray-300 before:w-[5px] before:h-[5px] before:rounded ltr:before:mr-2 rtl:before:ml-2 dark:text-[#888ea8] hover:bg-gray-100 dark:hover:bg-gray-900`}
+                                                        onClick={() => setPurchase(!purchase)}
+                                                    >
+                                                        {t('purchase')}
+                                                        <div className={`${purchase ? 'rtl:rotate-90 -rotate-90' : ''} ltr:ml-auto rtl:mr-auto`}>
+                                                            <IconCaretsDown fill={true} className="w-4 h-4" />
+                                                        </div>
+                                                    </button>
+                                                    </div>
+
+                                                    <AnimateHeight duration={300} height={purchase ? 'auto' : 0}>
+                                                        <ul className="sub-menu text-gray-500">
+                                                            <li>
+                                                                <NavLink to="/apps/invoice/purchase/invoice">{t('Invoices')}</NavLink>
+                                                            </li>
+                                                            <li>
+                                                                <NavLink to="/apps/invoice/purchase/receipt">{t('Payment Receipt')}</NavLink>
+                                                            </li>
+                                                            <li>
+                                                                <NavLink to="/apps/invoice/purchase/debitNote">{t('Debit Note')}</NavLink>
+                                                            </li>
+                                                        </ul>
+                                                    </AnimateHeight>
                                                 </li>
-                                                <li>
-                                                    {/* <NavLink to="/apps/invoice/edit">{t('edit')}</NavLink> */}
-                                                </li>
+                                                {/* Nested submenu END */}
                                             </ul>
                                         </AnimateHeight>
                                     </li>

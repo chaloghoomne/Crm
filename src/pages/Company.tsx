@@ -2,6 +2,8 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { useBunnyUpload } from '../components/useBunny';
+import { FaImages, FaTimes } from 'react-icons/fa';
 
 type EmailConfig = {
     name: string;
@@ -20,6 +22,7 @@ const Company = () => {
         password: '',
     };
     const [params, setParams] = useState<any>(JSON.parse(JSON.stringify(defaultParams)));
+    const [Images, setImages] = useState<String[]>([]);
     const [configs, setConfigs] = useState<EmailConfig[]>([
         {
             name: '',
@@ -30,35 +33,49 @@ const Company = () => {
             provider: '',
         },
     ]);
+    const { uploadFiles, loading } = useBunnyUpload();
 
-        const showAlert2 = async (type: number, message: string) => {
-            if (type === 15) {
-                const toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                });
-                toast.fire({
-                    icon: 'success',
-                    title: message,
-                    padding: '10px 20px',
-                });
-            }
-            if (type === 16) {
-                const toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                });
-                toast.fire({
-                    icon: 'warning',
-                    title: message,
-                    padding: '10px 20px',
-                });
-            }
-        };
+    const showAlert2 = async (type: number, message: string) => {
+        if (type === 15) {
+            const toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+            });
+            toast.fire({
+                icon: 'success',
+                title: message,
+                padding: '10px 20px',
+            });
+        }
+        if (type === 16) {
+            const toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+            });
+            toast.fire({
+                icon: 'warning',
+                title: message,
+                padding: '10px 20px',
+            });
+        }
+    };
+
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        const name = e.target.name;
+        const result = await uploadFiles(files?.[0] ?? [], name); // Use optional chaining and default to an empty array if files is null
+
+        setImages([...Images, ...result.imageUrls]);
+        console.log(result);
+    };
+    const handleRemoveImage = (index: number) => {
+        Images.splice(index, 1);
+        setImages([...Images]);
+    };
 
     const handleChange = (index: number, field: keyof EmailConfig, value: string | boolean) => {
         const updated = [...configs];
@@ -83,7 +100,7 @@ const Company = () => {
             },
         ]);
     };
-    const handleSubmit = async(e: any) => {
+    const handleSubmit = async (e: any) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         console.log(formData);
@@ -109,8 +126,8 @@ const Company = () => {
                     secure: true,
                     provider: '',
                 },
-            ])
-        } catch (err:any) {
+            ]);
+        } catch (err: any) {
             showAlert2(16, err.response.data.message);
             console.log(err);
         }
@@ -144,9 +161,31 @@ const Company = () => {
                             <input id="actionEmail" name="adminEmail" type="email" placeholder="" className="form-input ltr:rounded-l-none rtl:rounded-r-none" />
                         </div>
                     </div>
-                    <div>
-                        <label>Address:</label>
-                        <textarea name="address" placeholder="Address" className="form-input" />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label>Address:</label>
+                            <textarea name="address" placeholder="Address" className="form-input" />
+                        </div>
+                        <div>
+                            <label>Upload Company Logo:</label>
+                            <label className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center text-sm cursor-pointer">
+                                <FaImages className="h-3 w-3 mr-1" />
+                                <span>{loading ? 'Uploading...' : 'Upload Images'}</span>
+                                <input type="file" className="hidden" accept="image/*" multiple onChange={(e: any) => handleUpload(e)} disabled={loading} />
+                            </label>
+                            {Images.length > 0 && (
+                                <div className="flex flex-wrap mt-2">
+                                    {Images.map((image: any, index: number) => (
+                                        <div key={index} className="relative mr-2 mb-2">
+                                            <img src={image} alt={`Image ${index}`} className="w-20 h-20 object-cover rounded-md" />
+                                            <button type="button" className="absolute top-0 right-0 text-white bg-red-500 hover:bg-red-600 rounded-full p-1" onClick={() => handleRemoveImage(index)}>
+                                                <FaTimes />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <div className="bg-gray-100 rounded-md p-5 pb-8">
                         <h1 className="font-semibold text-center pb-2 text-lg dark:text-white-light">Bank Details</h1>
