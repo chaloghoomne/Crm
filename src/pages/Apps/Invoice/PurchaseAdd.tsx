@@ -287,6 +287,8 @@ const InvoiceForm = ({ invoiceType }: { invoiceType: string }) => {
     setBankDetailsData((prev) => ({ ...prev, [field]: value }))
   }
 
+  
+
   useEffect(() => {
   const fetchNextInvoiceNumber = async () => {
     try {

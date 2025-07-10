@@ -11,7 +11,7 @@ import IconEye from "../../../components/Icon/IconEye"
 import Dropdown from "../../../components/Dropdown"
 import axios from "axios"
 import type { company, Invoice, InvoiceItem, Receipt } from "../../../types/types"
-import { FaOptinMonster, FaDownload, FaTimes } from "react-icons/fa"
+import { FaOptinMonster, FaDownload, FaTimes, FaWhatsapp } from "react-icons/fa"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
 import RecordPayment from "../../../components/RecordPayment"
@@ -62,6 +62,17 @@ const ReceiptPurchase = () => {
     columnAccessor: "receiverName",
     direction: "asc",
   })
+
+  const sendWatsapp = async(id:string)=>{
+    console.log(id)
+    // const phone = await axios.get(`${import.meta.env.VITE_BASE_URL}api/getPhone/${id.receiverPhone}`);
+    const formattedPhone = id
+  const encodedMessage = encodeURIComponent("hello");
+
+  const whatsappURL = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
+
+  window.open(whatsappURL, "_blank");
+  }
 
 
   const filterData = (id: string | null) => {
@@ -328,10 +339,10 @@ const formatCurrency = (amount: number, currency: string) => {
                                 </button>
                               </li>
                               <li>
-                                {/* <button type="button" className="flex items-center gap-2 w-full">
-                                  <IconEdit className="w-4 h-4" />
-                                  Edit
-                                </button> */}
+                                <button type="button" className="flex items-center gap-2 w-full" onClick={()=>sendWatsapp(data?.invoiceId.receiverPhone || " ")}>
+                                                                  <FaWhatsapp className="w-4 h-4" />
+                                                                  Watsapp
+                                                                </button>
                               </li>
                               <li>
                                 <button type="button" className="flex items-center gap-2 w-full text-danger" onClick={()=> deleteInvoice(data?._id ? data._id : "")}>
@@ -484,7 +495,7 @@ const formatCurrency = (amount: number, currency: string) => {
       {/* Notes */}
       {viewInvoiceData.note && (
         <div className="mt-4 border-t pt-4">
-          <h4 className="font-semibold mb-1 text-gray-800">Remarks</h4>
+      
           <p className="text-gray-700">{viewInvoiceData.note}</p>
         </div>
       )}

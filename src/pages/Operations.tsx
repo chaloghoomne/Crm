@@ -386,10 +386,10 @@ const Operations = () => {
                                                     {/* <p>Destination:{lead.departureDest+" - "+lead.arrivalDest || lead.visaName }</p> */}
                                                     <p>Lead Source: {lead.leadId?.leadSource}</p>
                                                     <p className='flex items-center gap-1'>
-                                                        {lead.leadId.priority === 'hot'&&(
+                                                        {lead?.leadId?.priority === 'hot'&&(
                                                             <b className='flex items-center gap-1'><FaFireAlt color='red' />{lead.leadId?.priority}</b>
                                                         )}
-                                                        {lead.leadId.priority === 'cold'&&(
+                                                        {lead.leadId?.priority === 'cold'&&(
                                                             <b className='flex items-center gap-1'><MdOutlineSevereCold color='blue' />{lead.leadId?.priority}</b>
                                                         )}
                                                     </p>
@@ -424,7 +424,7 @@ const Operations = () => {
                                                         {lead.leadId?.price ? (
                                                             <>
                                                                 
-                                                                {Number(lead.leadId.price).toLocaleString('en-IN')}
+                                                                {Number(lead.leadId?.price).toLocaleString('en-IN')}
                                                             </>
                                                         ) : (
                                                             '-'

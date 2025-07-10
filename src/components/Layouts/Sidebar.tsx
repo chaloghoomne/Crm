@@ -31,10 +31,13 @@ import IconMenuUsers from '../Icon/Menu/IconMenuUsers';
 import IconMenuPages from '../Icon/Menu/IconMenuPages';
 import IconMenuAuthentication from '../Icon/Menu/IconMenuAuthentication';
 import IconMenuDocumentation from '../Icon/Menu/IconMenuDocumentation';
+import { get } from 'lodash';
+import { use } from 'i18next';
 
 const Sidebar = () => {
     const [currentMenu, setCurrentMenu] = useState<string>('');
-    const [role,setRole] = useState('');
+    const role =  useSelector((state:IRootState)=>state.auth.role);
+    
     const [errorSubMenu, setErrorSubMenu] = useState(false);
     const [sales,setSales] = useState(false);
     const [purchase,setPurchase] = useState(false);
@@ -49,13 +52,6 @@ const Sidebar = () => {
         });
     };
 
-    const getRole = ()=>{
-        const role = localStorage.getItem('company_role');
-        if(role){
-            setRole(role);
-        }
-
-    }
     useEffect(()=>{
         const token = localStorage.getItem('Crm_token');
         if(!token){
@@ -65,6 +61,7 @@ const Sidebar = () => {
     },[])
 
     useEffect(() => {
+        console.log("role",role);
         const selector = document.querySelector('.sidebar ul a[href="' + window.location.pathname + '"]');
         if (selector) {
             selector.classList.add('active');
@@ -127,12 +124,10 @@ const Sidebar = () => {
                                         <li>
                                             <NavLink to="/">{t('sales')}</NavLink>
                                         </li>
-                                        <li>
-                                            <NavLink to="/AddCompany">{t('Add Company')}</NavLink>
-                                        </li>
-                                        <li>
+
+                                        {/* <li>
                                             <NavLink to="/AddEmployee">{t('Add Employee')}</NavLink>
-                                        </li>
+                                        </li> */}
                                         <li>
                                             <NavLink to="/AddLead">{t('Add Leads')}</NavLink>
                                         </li>
@@ -234,18 +229,18 @@ const Sidebar = () => {
                                                 {/* Nested submenu START */}
                                                 <li className="menu nav-item">
                                                     <div>
-                                                    <button
-                                                        type="button"
-                                                        className={`${
-                                                            sales ? 'open' : ''
-                                                        } w-full before:bg-gray-300 before:w-[5px] before:h-[5px] before:rounded ltr:before:mr-2 rtl:before:ml-2 dark:text-[#888ea8] hover:bg-gray-100 dark:hover:bg-gray-900`}
-                                                        onClick={() => setSales(!sales)}
-                                                    >
-                                                        {t('sales')}
-                                                        <div className={`${sales ? 'rtl:rotate-90 -rotate-90' : ''} ltr:ml-auto rtl:mr-auto`}>
-                                                            <IconCaretsDown fill={true} className="w-4 h-4" />
-                                                        </div>
-                                                    </button>
+                                                        <button
+                                                            type="button"
+                                                            className={`${
+                                                                sales ? 'open' : ''
+                                                            } w-full before:bg-gray-300 before:w-[5px] before:h-[5px] before:rounded ltr:before:mr-2 rtl:before:ml-2 dark:text-[#888ea8] hover:bg-gray-100 dark:hover:bg-gray-900`}
+                                                            onClick={() => setSales(!sales)}
+                                                        >
+                                                            {t('sales')}
+                                                            <div className={`${sales ? 'rtl:rotate-90 -rotate-90' : ''} ltr:ml-auto rtl:mr-auto`}>
+                                                                <IconCaretsDown fill={true} className="w-4 h-4" />
+                                                            </div>
+                                                        </button>
                                                     </div>
 
                                                     <AnimateHeight duration={300} height={sales ? 'auto' : 0}>
@@ -264,18 +259,18 @@ const Sidebar = () => {
                                                 </li>
                                                 <li className="menu nav-item">
                                                     <div>
-                                                    <button
-                                                        type="button"
-                                                        className={`${
-                                                            purchase ? 'open' : ''
-                                                        } w-full before:bg-gray-300 before:w-[5px] before:h-[5px] before:rounded ltr:before:mr-2 rtl:before:ml-2 dark:text-[#888ea8] hover:bg-gray-100 dark:hover:bg-gray-900`}
-                                                        onClick={() => setPurchase(!purchase)}
-                                                    >
-                                                        {t('purchase')}
-                                                        <div className={`${purchase ? 'rtl:rotate-90 -rotate-90' : ''} ltr:ml-auto rtl:mr-auto`}>
-                                                            <IconCaretsDown fill={true} className="w-4 h-4" />
-                                                        </div>
-                                                    </button>
+                                                        <button
+                                                            type="button"
+                                                            className={`${
+                                                                purchase ? 'open' : ''
+                                                            } w-full before:bg-gray-300 before:w-[5px] before:h-[5px] before:rounded ltr:before:mr-2 rtl:before:ml-2 dark:text-[#888ea8] hover:bg-gray-100 dark:hover:bg-gray-900`}
+                                                            onClick={() => setPurchase(!purchase)}
+                                                        >
+                                                            {t('purchase')}
+                                                            <div className={`${purchase ? 'rtl:rotate-90 -rotate-90' : ''} ltr:ml-auto rtl:mr-auto`}>
+                                                                <IconCaretsDown fill={true} className="w-4 h-4" />
+                                                            </div>
+                                                        </button>
                                                     </div>
 
                                                     <AnimateHeight duration={300} height={purchase ? 'auto' : 0}>
@@ -296,7 +291,64 @@ const Sidebar = () => {
                                             </ul>
                                         </AnimateHeight>
                                     </li>
+                                    {role === "admin" && (
+                                        <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'settings' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('settings')}>
+                                            <div className="flex items-center">
+                                                <IconMenuInvoice className="group-hover:!text-primary shrink-0" />
+                                                <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('settings')}</span>
+                                            </div>
+                                            <div className={currentMenu !== 'settings' ? 'rtl:rotate-90 -rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
 
+                                        <AnimateHeight duration={300} height={currentMenu === 'settings' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <NavLink to="/AddCompany">{t('Add Company')}</NavLink>
+                                                </li>
+                                                <li>
+                                                    <NavLink to="/AddEmployee">{t('Add Employee')}</NavLink>
+                                                </li>
+                                                <li>
+                                                    <NavLink to="/apps/settings/email">{t('Email')}</NavLink>
+                                                </li>
+                                                <li>
+                                                    <NavLink to="/apps/settings/changeLogo">{t('Logo Change')}</NavLink>
+                                                </li>
+                                                <li>
+                                                    <NavLink to="/apps/taskAssign">{t('Task Assign')}</NavLink>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
+                                    </li>
+                                    )}
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'reports' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('reports')}>
+                                            <div className="flex items-center">
+                                                <IconMenuInvoice className="group-hover:!text-primary shrink-0" />
+                                                <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('Reports')}</span>
+                                            </div>
+                                            <div className={currentMenu !== 'reports' ? 'rtl:rotate-90 -rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'reports' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <NavLink to="/apps/settings/Report">{t('Report')}</NavLink>
+                                                </li>
+                                                <li>
+                                                    <NavLink to="/apps/settings/agentReport">{t('Agent Report')}</NavLink>
+                                                </li>
+                                                <li>
+                                                    <NavLink to="/apps/settings/companyReport">{t('Company Report')}</NavLink>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
+                                    </li>
                                     <li className="nav-item">
                                         <NavLink to="/apps/calendar" className="group">
                                             <div className="flex items-center">

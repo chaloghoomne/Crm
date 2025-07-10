@@ -11,7 +11,7 @@ import IconEye from "../../../components/Icon/IconEye"
 import Dropdown from "../../../components/Dropdown"
 import axios from "axios"
 import type { company, Invoice, InvoiceItem } from "../../../types/types"
-import { FaOptinMonster, FaDownload, FaTimes } from "react-icons/fa"
+import { FaOptinMonster, FaDownload, FaTimes, FaWhatsapp } from "react-icons/fa"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
 import RecordPayment from "../../../components/RecordPayment"
@@ -177,6 +177,15 @@ const formatCurrency = (amount: number, currency: string) => {
     const discountAmount = (subtotal * Number.parseFloat(invoice.discount || "0")) / 100
     // const shippingCharges = Number.parseFloat(invoice.shippingCharges || "0")
     return subtotal + taxAmount - discountAmount 
+  }
+
+  const sendWatsapp = async(phone:string,message:string)=>{
+    const formattedPhone = phone
+  const encodedMessage = encodeURIComponent(message);
+
+  const whatsappURL = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
+
+  window.open(whatsappURL, "_blank");
   }
 
   useEffect(()=>{
@@ -391,10 +400,10 @@ const formatCurrency = (amount: number, currency: string) => {
                                 </button>
                               </li>
                               <li>
-                                {/* <button type="button" className="flex items-center gap-2 w-full">
-                                  <IconEdit className="w-4 h-4" />
-                                  Edit
-                                </button> */}
+                                <button type="button" className="flex items-center gap-2 w-full" onClick={()=>sendWatsapp(data.receiverPhone,"This is a trial watsapp message")}>
+                                  <FaWhatsapp className="w-4 h-4" />
+                                  Watsapp
+                                </button>
                               </li>
                               <li>
                                 <button type="button" className="flex items-center gap-2 w-full text-danger" onClick={()=> deleteInvoice(data?._id ? data._id : "")}>

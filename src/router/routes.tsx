@@ -13,6 +13,12 @@ import ReceiptPurchase from '../pages/Apps/Invoice/receiptPurchase';
 import InvoicePurchase from '../pages/Apps/Invoice/InvoicePurchase';
 import DebitNote from '../pages/Apps/Invoice/debitNote';
 import CreditNote from '../pages/Apps/Invoice/creditNote';
+import Email from '../pages/settings/Email';
+import { ImageChange } from '../pages/settings/PictureChange';
+import { Report } from '../pages/Reports/Report';
+import { AgentReport } from '../pages/Reports/agentReport';
+import { CompanyReports } from '../pages/Reports/companyReports';
+import { TaskAssign } from '../pages/Apps/Task';
 const Index = lazy(() => import('../pages/Index'));
 const Analytics = lazy(() => import('../pages/Analytics'));
 const Finance = lazy(() => import('../pages/Finance'));
@@ -210,8 +216,8 @@ const routes = [
     },
     {
         path: '/apps/invoice/purchase/receipt',
-        element: <ReceiptPurchase />,
-    },
+        element: <ReceiptPurchase />,  
+    }, 
     {
         path: '/apps/invoice/purchase/invoice',
         element: <InvoicePurchase />,
@@ -224,6 +230,13 @@ const routes = [
         path: '/apps/invoice/sales/creditNote',
         element: <CreditNote />,
     },
+
+    {
+        path: '/apps/taskAssign',
+        element: <TaskAssign />,
+    },
+
+
 
 
     {
@@ -238,6 +251,27 @@ const routes = [
         path: '/apps/invoice/edit',
         element: <Edit />,
     },
+    {
+        path: '/apps/settings/email',
+        element: <Email />,
+    },
+    {
+        path: '/apps/settings/changeLogo',
+        element: <ImageChange />,
+    },
+    {
+        path: '/apps/settings/Report',
+        element: <Report/>,
+    },
+    {
+        path: '/apps/settings/agentReport',
+        element: <AgentReport/>,
+    },
+    {
+        path: '/apps/settings/companyReport',
+        element: <CompanyReports/>,
+    },
+
     // components page
     {
         path: '/components/tabs',

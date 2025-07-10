@@ -245,7 +245,7 @@ const AddLead = () => {
     const getAgent = async () => {
         try {
             const res = await axios.get(`${import.meta.env.VITE_BASE_URL}api/getAgents/${company_id}`);
-            // console.log(res.data)
+            console.log(res.data)
             setAgents(res.data.agent);
         } catch (err) {
             console.log(err);

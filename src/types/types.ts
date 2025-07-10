@@ -185,6 +185,7 @@ interface emp {
 
   interface Receipt{
     _id?:string
+    invoiceId:Invoice
     receiptNumber:string
     date:Date
     amountPaid:number

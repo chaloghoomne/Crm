@@ -1,9 +1,11 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useBunnyUpload } from '../components/useBunny';
 import { FaImages, FaTimes } from 'react-icons/fa';
+import { useSelector } from 'react-redux';
+import { IRootState } from '../store';
 
 type EmailConfig = {
     name: string;
@@ -22,7 +24,9 @@ const Company = () => {
         password: '',
     };
     const [params, setParams] = useState<any>(JSON.parse(JSON.stringify(defaultParams)));
-    const [Images, setImages] = useState<String[]>([]);
+    const role = useSelector((state:IRootState)=>state.auth.role);
+    const [Images, setImages] = useState('');
+    const [signature, setSignature] = useState('');
     const [configs, setConfigs] = useState<EmailConfig[]>([
         {
             name: '',
@@ -34,6 +38,10 @@ const Company = () => {
         },
     ]);
     const { uploadFiles, loading } = useBunnyUpload();
+
+    useEffect(()=>{
+        if(role !== 'admin') window.location.href = '/';
+    })
 
     const showAlert2 = async (type: number, message: string) => {
         if (type === 15) {
@@ -69,12 +77,23 @@ const Company = () => {
         const name = e.target.name;
         const result = await uploadFiles(files?.[0] ?? [], name); // Use optional chaining and default to an empty array if files is null
 
-        setImages([...Images, ...result.imageUrls]);
+        setImages(result.imageUrls[0]);
         console.log(result);
     };
-    const handleRemoveImage = (index: number) => {
-        Images.splice(index, 1);
-        setImages([...Images]);
+    const handleRemoveImage = () => {
+        setImages('');
+    };
+
+    const handleUploadSignature = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        const name = e.target.name;
+        const result = await uploadFiles(files?.[0] ?? [], name); // Use optional chaining and default to an empty array if files is null
+
+        setSignature(result.imageUrls[0]);
+        console.log(result);
+    };
+    const handleRemoveSignature = () => {
+        setSignature('');
     };
 
     const handleChange = (index: number, field: keyof EmailConfig, value: string | boolean) => {
@@ -107,6 +126,8 @@ const Company = () => {
         const values = Object.fromEntries(formData.entries());
         const finalValues = {
             ...values,
+            imgurl: Images,
+            signature: signature,
             subscription: {
                 plan: 'Pro',
                 status: 'Active',
@@ -127,6 +148,8 @@ const Company = () => {
                     provider: '',
                 },
             ]);
+            setImages('');
+            setSignature('');
         } catch (err: any) {
             showAlert2(16, err.response.data.message);
             console.log(err);
@@ -161,28 +184,42 @@ const Company = () => {
                             <input id="actionEmail" name="adminEmail" type="email" placeholder="" className="form-input ltr:rounded-l-none rtl:rounded-r-none" />
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-2">
                         <div>
                             <label>Address:</label>
                             <textarea name="address" placeholder="Address" className="form-input" />
                         </div>
                         <div>
-                            <label>Upload Company Logo:</label>
-                            <label className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center text-sm cursor-pointer">
+                            <label className="block mb-1 font-medium">Upload Company Logo:</label>
+                            <label className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center text-sm cursor-pointer w-fit">
                                 <FaImages className="h-3 w-3 mr-1" />
-                                <span>{loading ? 'Uploading...' : 'Upload Images'}</span>
-                                <input type="file" className="hidden" accept="image/*" multiple onChange={(e: any) => handleUpload(e)} disabled={loading} />
+                                <span>{loading ? 'Uploading...' : 'Upload Logo'}</span>
+                                <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={loading} />
                             </label>
-                            {Images.length > 0 && (
-                                <div className="flex flex-wrap mt-2">
-                                    {Images.map((image: any, index: number) => (
-                                        <div key={index} className="relative mr-2 mb-2">
-                                            <img src={image} alt={`Image ${index}`} className="w-20 h-20 object-cover rounded-md" />
-                                            <button type="button" className="absolute top-0 right-0 text-white bg-red-500 hover:bg-red-600 rounded-full p-1" onClick={() => handleRemoveImage(index)}>
-                                                <FaTimes />
-                                            </button>
-                                        </div>
-                                    ))}
+
+                            {Images && (
+                                <div className="relative mt-3 w-fit">
+                                    <img src={Images} alt="Logo" className="w-24 h-24 object-cover rounded-md" />
+                                    <button type="button" onClick={handleRemoveImage} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600">
+                                        <FaTimes />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block mb-1 font-medium">Upload Company Signature:</label>
+                            <label className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center text-sm cursor-pointer w-fit">
+                                <FaImages className="h-3 w-3 mr-1" />
+                                <span>{loading ? 'Uploading...' : 'Upload Signature'}</span>
+                                <input type="file" accept="image/*" className="hidden" onChange={handleUploadSignature} disabled={loading} />
+                            </label>
+
+                            {signature && (
+                                <div className="relative mt-3 w-fit">
+                                    <img src={signature} alt="Logo" className="w-24 h-24 object-cover rounded-md" />
+                                    <button type="button" onClick={handleRemoveSignature} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600">
+                                        <FaTimes />
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -212,39 +249,90 @@ const Company = () => {
                         <h3 font-semibold mb-2>
                             Add Company Configured Mails
                         </h3>
-                        <div className="flex flex-row">
+                        <div className="flex flex-wrap gap-2">
                             {configs.map((config, index) => (
-                                <div key={index} className="mb-6 p-4 border rounded-lg shadow">
-                                    <h3 className="font-semibold mb-2">Email Configuration {index + 1}</h3>
-                                    <div className="mb-2">
-                                        <label className="block">Name:</label>
-                                        <input type="text" value={config.name} onChange={(e) => handleChange(index, 'name', e.target.value)} className="form-input w-full" />
-                                    </div>
-                                    <div className="mb-2">
-                                        <label className="block">Email:</label>
-                                        <input type="email" value={config.email} onChange={(e) => handleChange(index, 'email', e.target.value)} className="form-input w-full" />
-                                    </div>
-                                    <div className="mb-2">
-                                        <label className="block">Password:</label>
-                                        <input type="text" value={config.password} onChange={(e) => handleChange(index, 'password', e.target.value)} className="form-input w-full" />
-                                    </div>
-                                    <div className="mb-2">
-                                        <label className="block">Host:</label>
-                                        <input type="text" value={config.host} onChange={(e) => handleChange(index, 'host', e.target.value)} className="form-input w-full" />
-                                    </div>
-                                    <div className="mb-2">
-                                        <label className="block">Secure:</label>
-                                        <select value={config.secure ? 'true' : 'false'} onChange={(e) => handleChange(index, 'secure', e.target.value)} className="form-select w-full">
-                                            <option value="true">True</option>
-                                            <option value="false">False</option>
-                                        </select>
-                                    </div>
-                                    <div className="mb-2">
-                                        <label className="block">Provider:</label>
-                                        <input type="text" value={config.provider} onChange={(e) => handleChange(index, 'provider', e.target.value)} className="form-input w-full" />
-                                    </div>
+                        <div key={index} className="bg-white border rounded-lg shadow p-4">
+                            <button >X</button>
+                            <h3 className="text-lg font-semibold text-blue-600 mb-4">Email #{index + 1}</h3>
+
+                            <div className="space-y-2">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                                    <input type="text" value={config.name} onChange={(e) => handleChange(index, 'name', e.target.value)} className="mt-1 block form-input shadow-sm " />
                                 </div>
-                            ))}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                                    <input type="email" value={config.email} onChange={(e) => handleChange(index, 'email', e.target.value)} className="mt-1 block form-input shadow-sm " />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Password</label>
+                                    <input type="text" value={config.password} onChange={(e) => handleChange(index, 'password', e.target.value)} className="mt-1 block form-input shadow-sm " />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Host</label>
+                                    {/* <input
+                                        type="text"
+                                        value={config.host}
+                                        onChange={(e) => handleChange(index, 'host', e.target.value)}
+                                        className="mt-1 block form-input shadow-sm "
+                                    /> */}
+                                    <select name="host" id="host" value={config.host} onChange={(e) => handleChange(index, 'host', e.target.value)} className="mt-1 block form-select shadow-sm w-full">
+                                        <option value="">Select SMTP Provider</option>
+                                        <option value="smtp.gmail.com">Gmail</option>
+                                        <option value="smtp.zoho.com">Zoho Mail</option>
+                                        <option value="smtp.office365.com">Outlook / Office365</option>
+                                        <option value="smtp.mail.yahoo.com">Yahoo Mail</option>
+                                        <option value="smtp.mail.me.com">iCloud Mail</option>
+                                        <option value="smtp.yandex.com">Yandex Mail</option>
+                                        <option value="smtp.fastmail.com">FastMail</option>
+                                        <option value="smtp.mailgun.org">Mailgun</option>
+                                        <option value="smtp.sendgrid.net">SendGrid</option>
+                                        <option value="smtp.postmarkapp.com">Postmark</option>
+                                        <option value="mail.privateemail.com">Namecheap Private Email</option>
+                                        <option value="mail.gandi.net">Gandi Mail</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Secure</label>
+                                    <select value={config.secure ? 'true' : 'false'} onChange={(e) => handleChange(index, 'secure', e.target.value)} className="mt-1 block form-select shadow-sm ">
+                                        <option value="">Select Security Type</option>
+                                        <option value="true">Secure (SSL) — Port 465</option>
+                                        <option value="false">Not Secure (TLS/STARTTLS) — Port 587</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Provider</label>
+                                    {/* <input
+                                        type="text"
+                                        value={config.provider}
+                                        onChange={(e) => handleChange(index, 'provider', e.target.value)}
+                                        className="mt-1 block form-input shadow-sm "
+                                    /> */}
+                                    <select
+                                        value={config.provider}
+                                        name="provider"
+                                        id="provider"
+                                        onChange={(e) => handleChange(index, 'provider', e.target.value)}
+                                        className="mt-1 block form-input shadow-sm "
+                                    >
+                                        <option value="">Select Email Provider</option>
+                                        <option value="gmail">Gmail</option>
+                                        <option value="zoho">Zoho Mail</option>
+                                        <option value="outlook">Outlook / Office365</option>
+                                        <option value="yahoo">Yahoo Mail</option>
+                                        <option value="icloud">iCloud Mail</option>
+                                        <option value="yandex">Yandex Mail</option>
+                                        <option value="fastmail">FastMail</option>
+                                        <option value="mailgun">Mailgun</option>
+                                        <option value="sendgrid">SendGrid</option>
+                                        <option value="postmark">Postmark</option>
+                                        <option value="namecheap">Namecheap Private Email</option>
+                                        <option value="gandi">Gandi Mail</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                         </div>
 
                         <button type="button" onClick={addMore} className="px-4 py-2 bg-blue-600 text-white rounded shadow">
