@@ -14,11 +14,11 @@ import Itenaries from './Apps/Itenaries';
 import IconX from '../components/Icon/IconX';
 import IconDollarSign from '../components/Icon/IconDollarSign';
 import { FaAccusoft, FaFireAlt, FaRupeeSign } from 'react-icons/fa';
-import { GiMountains } from "react-icons/gi";
-import { SlCalender } from "react-icons/sl";
-import { IoLocation } from "react-icons/io5";
-import { MdOutlineSevereCold } from "react-icons/md";
-import { AiOutlineMail } from "react-icons/ai";
+import { GiMountains } from 'react-icons/gi';
+import { SlCalender } from 'react-icons/sl';
+import { IoLocation } from 'react-icons/io5';
+import { MdOutlineSevereCold } from 'react-icons/md';
+import { AiOutlineMail } from 'react-icons/ai';
 import * as io from 'react-icons/io5';
 import * as fa from 'react-icons/fa';
 import * as md from 'react-icons/md';
@@ -74,8 +74,8 @@ const Operations = () => {
         }
     };
 
-    const handleHotelSubmit = async(e:any) =>{
-        e.preventDefault()
+    const handleHotelSubmit = async (e: any) => {
+        e.preventDefault();
         const data = new FormData(e.target);
         const values = Object.fromEntries(data.entries());
         const finalValues = { ...values, companyId };
@@ -90,7 +90,7 @@ const Operations = () => {
             showAlert2(16, err.response.data.message);
             console.log(err);
         }
-    }
+    };
 
     const saveSupplierInfo = async (e: any) => {
         try {
@@ -105,7 +105,7 @@ const Operations = () => {
             showAlert2(15, res.data.message);
         } catch (err: any) {
             showAlert2(16, err.response.data.message);
-            console.log(err);   
+            console.log(err);
         }
     };
 
@@ -267,12 +267,44 @@ const Operations = () => {
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th ><p className='flex items-center gap-1'> <fa.FaInfo />Title</p></th>
-                                            <th><p className='flex items-center gap-1'><fa.FaSearchLocation />Destination </p></th>
-                                            <th><p className='flex items-center gap-1'><fa.FaUser />Agent/Client</p></th>
-                                            <th> <p className='flex items-center gap-1'><SlCalender />Query Date</p></th>
-                                            <th><p className='flex items-center gap-1'><fa.FaHourglass />Status</p></th>
-                                            <th><p className='flex items-center gap-1'><fa.FaUserPlus />Assign Employee</p></th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    {' '}
+                                                    <fa.FaInfo />
+                                                    Title
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaSearchLocation />
+                                                    Destination{' '}
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaUser />
+                                                    Agent/Client
+                                                </p>
+                                            </th>
+                                            <th>
+                                                {' '}
+                                                <p className="flex items-center gap-1">
+                                                    <SlCalender />
+                                                    Query Date
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaHourglass />
+                                                    Status
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center gap-1">
+                                                    <fa.FaUserPlus />
+                                                    Assign Employee
+                                                </p>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -306,13 +338,15 @@ const Operations = () => {
                                                     <p>Mobile No. : {lead?.phoneNumber}</p>
                                                 </td>
                                                 <td>
-                                                    <p className='flex items-center gap-1'><SlCalender/>{new Date(lead.createdAt).toLocaleDateString()}</p>
+                                                    <p className="flex items-center gap-1">
+                                                        <SlCalender />
+                                                        {new Date(lead.createdAt).toLocaleDateString()}
+                                                    </p>
                                                     {/* <p>Added By:{lead.assignedEmpName}</p> */}
                                                 </td>
                                                 <td>
-                                                    <div className='bg-success bg-opacity-60 w-full h-full rounded-md text-white p-2'>
-
-                                                    <p>{lead.status}</p>
+                                                    <div className="bg-success bg-opacity-60 w-full h-full rounded-md text-white p-2">
+                                                        <p>{lead.status}</p>
                                                     </div>
                                                 </td>
                                                 <td>
@@ -355,12 +389,48 @@ const Operations = () => {
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th ><p className='flex items-center'> <fa.FaInfo />Title</p></th>
-                                            <th><p className='flex items-center'><fa.FaSearchLocation />Destination </p></th>
-                                            <th><p className='flex items-center'><fa.FaUser />Agent/Client</p></th>
-                                            <th> <p className='flex items-center'><SlCalender />Query Date</p></th>
-                                            {lead.length > 0 && <th> <p className='flex items-center'><fa.FaRupeeSign />Supplier/Price</p></th>}
-                                            <th> <p className='flex items-center'><io.IoOptions />Options</p></th>
+                                            <th>
+                                                <p className="flex items-center">
+                                                    {' '}
+                                                    <fa.FaInfo />
+                                                    Title
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center">
+                                                    <fa.FaSearchLocation />
+                                                    Destination{' '}
+                                                </p>
+                                            </th>
+                                            <th>
+                                                <p className="flex items-center">
+                                                    <fa.FaUser />
+                                                    Agent/Client
+                                                </p>
+                                            </th>
+                                            <th>
+                                                {' '}
+                                                <p className="flex items-center">
+                                                    <SlCalender />
+                                                    Query Date
+                                                </p>
+                                            </th>
+                                            {lead.length > 0 && (
+                                                <th>
+                                                    {' '}
+                                                    <p className="flex items-center">
+                                                        <fa.FaRupeeSign />
+                                                        Supplier/Price
+                                                    </p>
+                                                </th>
+                                            )}
+                                            <th>
+                                                {' '}
+                                                <p className="flex items-center">
+                                                    <io.IoOptions />
+                                                    Options
+                                                </p>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -370,9 +440,12 @@ const Operations = () => {
                                                     <p className="text-xs w-16 overflow-auto">{lead._id}</p>
                                                 </td>
                                                 <td>
-                                                    <p className='flex items-center gap-1'><GiMountains />{lead.leadId?.serviceType?.toUpperCase()}</p>
+                                                    <p className="flex items-center gap-1">
+                                                        <GiMountains />
+                                                        {lead.leadId?.serviceType?.toUpperCase()}
+                                                    </p>
                                                     <p className="text-sm flex items-center gap-1">
-                                                    <SlCalender />
+                                                        <SlCalender />
                                                         {new Date(lead?.leadId?.fromDate || '').toLocaleDateString()} - {new Date(lead?.leadId?.toDate || '').toLocaleDateString()}
                                                     </p>
                                                     <p>
@@ -381,54 +454,68 @@ const Operations = () => {
                                                 </td>
                                                 <td>
                                                     {lead.leadId?.serviceType === 'visa' && <p>Visa Name:{lead.leadId?.visaName}</p>}
-                                                    {lead.leadId?.serviceType === 'tour' && <p className='flex items-center gap-1'><IoLocation/>
-                                                    Destination:{lead.leadId?.destination}</p>}
+                                                    {lead.leadId?.serviceType === 'tour' && (
+                                                        <p className="flex items-center gap-1">
+                                                            <IoLocation />
+                                                            Destination:{lead.leadId?.destination}
+                                                        </p>
+                                                    )}
                                                     {/* <p>Destination:{lead.departureDest+" - "+lead.arrivalDest || lead.visaName }</p> */}
                                                     <p>Lead Source: {lead.leadId?.leadSource}</p>
-                                                    <p className='flex items-center gap-1'>
-                                                        {lead?.leadId?.priority === 'hot'&&(
-                                                            <b className='flex items-center gap-1'><FaFireAlt color='red' />{lead.leadId?.priority}</b>
+                                                    <p className="flex items-center gap-1">
+                                                        {lead?.leadId?.priority === 'hot' && (
+                                                            <b className="flex items-center gap-1">
+                                                                <FaFireAlt color="red" />
+                                                                {lead.leadId?.priority}
+                                                            </b>
                                                         )}
-                                                        {lead.leadId?.priority === 'cold'&&(
-                                                            <b className='flex items-center gap-1'><MdOutlineSevereCold color='blue' />{lead.leadId?.priority}</b>
+                                                        {lead.leadId?.priority === 'cold' && (
+                                                            <b className="flex items-center gap-1">
+                                                                <MdOutlineSevereCold color="blue" />
+                                                                {lead.leadId?.priority}
+                                                            </b>
                                                         )}
                                                     </p>
                                                 </td>
                                                 <td>
-                                                    <p ><span className='font-bold'>Agent: </span>{lead.leadId?.agentName}</p>
-                                                    <p> <span className='font-bold'>Name: </span>{lead?.leadId?.name}</p>
-                                                    <p className='flex items-center gap-1'><AiOutlineMail  />: {lead?.leadId?.email}</p>
-                                                    <p className='flex items-center gap-1'><io.IoCallOutline /> {lead?.leadId?.phoneNumber}</p>
+                                                    <p>
+                                                        <span className="font-bold">Agent: </span>
+                                                        {lead.leadId?.agentName}
+                                                    </p>
+                                                    <p>
+                                                        {' '}
+                                                        <span className="font-bold">Name: </span>
+                                                        {lead?.leadId?.name}
+                                                    </p>
+                                                    <p className="flex items-center gap-1">
+                                                        <AiOutlineMail />: {lead?.leadId?.email}
+                                                    </p>
+                                                    <p className="flex items-center gap-1">
+                                                        <io.IoCallOutline /> {lead?.leadId?.phoneNumber}
+                                                    </p>
                                                 </td>
                                                 <td>
-                                                    <p className='flex items-center gap-1'><io.IoCalendarClearOutline />{new Date(lead.leadId?.createdAt).toLocaleDateString()}</p>
+                                                    <p className="flex items-center gap-1">
+                                                        <io.IoCalendarClearOutline />
+                                                        {new Date(lead.leadId?.createdAt).toLocaleDateString()}
+                                                    </p>
                                                     {/* <p>Added By:{lead.assignedEmpName}</p> */}
                                                 </td>
-                                                <td><p className='flex items-center gap-1'><fa.FaBuilding />
-                                                    {lead?.supplierName && <span>{lead?.supplierName}</span>}</p>
-
-                                                    <p className="flex items-center">
-                                                        <FaRupeeSign className="text-yellow-500 mr-1" />Supplier  &nbsp;
-                                                        {lead?.supplierPrice ? (
-                                                            <>
-                                                                
-                                                                {Number(lead?.supplierPrice).toLocaleString('en-IN')}
-                                                            </>
-                                                        ) : (
-                                                            '-'
-                                                        )}
+                                                <td>
+                                                    <p className="flex items-center gap-1">
+                                                        <fa.FaBuilding />
+                                                        {lead?.supplierName && <span>{lead?.supplierName}</span>}
                                                     </p>
 
                                                     <p className="flex items-center">
-                                                         <FaRupeeSign className="text-yellow-500 mr-1" /> Offered   &nbsp;
-                                                        {lead.leadId?.price ? (
-                                                            <>
-                                                                
-                                                                {Number(lead.leadId?.price).toLocaleString('en-IN')}
-                                                            </>
-                                                        ) : (
-                                                            '-'
-                                                        )}
+                                                        <FaRupeeSign className="text-yellow-500 mr-1" />
+                                                        Supplier &nbsp;
+                                                        {lead?.supplierPrice ? <>{Number(lead?.supplierPrice).toLocaleString('en-IN')}</> : '-'}
+                                                    </p>
+
+                                                    <p className="flex items-center">
+                                                        <FaRupeeSign className="text-yellow-500 mr-1" /> Offered &nbsp;
+                                                        {lead.leadId?.price ? <>{Number(lead.leadId?.price).toLocaleString('en-IN')}</> : '-'}
                                                     </p>
                                                     <p>Status: {lead?.operationStatus}</p>
                                                 </td>
@@ -565,7 +652,7 @@ const Operations = () => {
 
                 {hotelWindow && (
                     <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center">
-                         <div className="relative w-full max-w-2xl bg-white rounded-md p-5">
+                        <div className="relative w-full max-w-2xl bg-white rounded-md p-5">
                             <button className="absolute top-2 right-2" onClick={() => setHotelWindow(false)}>
                                 <IconX />
                             </button>
@@ -637,12 +724,17 @@ const Operations = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label >Status</label>
-                                    <select name="operationStatus" id="" className="form-select" defaultValue={assignLeads?.find((lead:Ops) => lead?.leadId?._id === leadId)?.operationStatus ?? 'Pending'} >
-                                            <option value="Pending">Pending</option>
-                                            <option value="Complete">Complete</option>
-                                            <option value="Cancelled">Cancelled</option>
-                                        </select>
+                                    <label>Status</label>
+                                    <select
+                                        name="operationStatus"
+                                        id=""
+                                        className="form-select"
+                                        defaultValue={assignLeads?.find((lead: Ops) => lead?.leadId?._id === leadId)?.operationStatus ?? 'Pending'}
+                                    >
+                                        <option value="Pending">Pending</option>
+                                        <option value="Complete">Complete</option>
+                                        <option value="Cancelled">Cancelled</option>
+                                    </select>
                                 </div>
 
                                 <div className="flex ">
